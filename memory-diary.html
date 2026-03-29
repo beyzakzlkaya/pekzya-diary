@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pekzya Diary — My Memory Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf6f0;
+    --cream-dark: #f2ebe0;
+    --cream-mid: #ede5d8;
+    --ink: #3a2e24;
+    --ink-light: #6b5a48;
+    --ink-faint: #a0907e;
+    --rose: #d4867a;
+    --rose-light: #f0c9c2;
+    --mauve: #9b8cb0;
+    --gold: #c9a96e;
+    --tape: rgba(220,200,160,0.55);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', serif;
+    background: var(--cream);
+    color: var(--ink);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(180,160,130,0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(180,160,130,0.12) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .topbar {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: rgba(250,246,240,0.92);
+    border-bottom: 1px solid rgba(180,155,120,0.25);
+    backdrop-filter: blur(8px);
+    flex-shrink: 0;
+  }
+  .topbar-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-style: italic;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar-date { font-family: 'Caveat', cursive; font-size: 18px; color: var(--ink-light); }
+  .topbar-actions { display: flex; gap: 8px; }
+  .topbar-btn { font-family: 'Lora', serif; font-size: 12px; color: var(--ink-light); background: none; border: 1px solid var(--cream-mid); border-radius: 20px; padding: 5px 14px; cursor: pointer; transition: all 0.2s; }
+  .topbar-btn:hover { background: var(--cream-mid); color: var(--ink); }
+
+  .app-body { display: flex; flex: 1; overflow: hidden; position: relative; z-index: 1; }
+
+  .calendar-panel {
+    width: 230px;
+    flex-shrink: 0;
+    background: rgba(250,246,240,0.85);
+    border-right: 1px solid rgba(180,155,120,0.2);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+    backdrop-filter: blur(6px);
+    overflow-y: auto;
+  }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; }
+  .cal-month { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--ink); }
+  .cal-nav { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.15s; }
+  .cal-nav:hover { background: var(--cream-mid); color: var(--ink); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+  .cal-dow { text-align: center; font-size: 10px; color: var(--ink-faint); padding: 3px 0; letter-spacing: 0.5px; text-transform: uppercase; }
+  .cal-day { text-align: center; color: var(--ink-light); padding: 5px 2px; border-radius: 50%; cursor: pointer; transition: all 0.15s; font-family: 'Caveat', cursive; font-size: 14px; position: relative; }
+  .cal-day:hover { background: var(--cream-mid); color: var(--ink); }
+  .cal-day.today { color: var(--rose); font-weight: 700; }
+  .cal-day.selected { background: var(--rose); color: white; }
+  .cal-day.has-memories::after { content: ''; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
+  .cal-day.selected::after { background: rgba(255,255,255,0.7); }
+
+  .cal-legend-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-faint); margin-bottom: 8px; }
+  .memory-list { display: flex; flex-direction: column; gap: 6px; }
+  .memory-chip { font-family: 'Caveat', cursive; font-size: 13px; color: var(--ink-light); background: var(--cream-dark); border-radius: 8px; padding: 5px 9px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+  .memory-chip:hover { border-color: var(--cream-mid); background: white; }
+
+  .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+  #canvas { width: 100%; height: 100%; position: relative; cursor: default; }
+
+  .toolbar { width: 68px; flex-shrink: 0; background: rgba(250,246,240,0.88); border-left: 1px solid rgba(180,155,120,0.2); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 6px; backdrop-filter: blur(6px); }
+  .tool-btn { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--cream-mid); background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: var(--ink-light); gap: 3px; }
+  .tool-btn:hover { background: var(--cream-dark); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(80,60,40,0.1); color: var(--ink); }
+  .tool-btn:active { transform: translateY(0); }
+  .tool-btn .t-icon { font-size: 18px; }
+  .tool-btn .t-label { font-size: 8px; font-family: 'Lora', serif; letter-spacing: 0.3px; }
+  .tool-sep { width: 30px; height: 1px; background: var(--cream-mid); margin: 4px 0; }
+
+  .mem-item { position: absolute; cursor: grab; user-select: none; }
+  .mem-item:active { cursor: grabbing; }
+  .mem-item .item-controls { position: absolute; top: -28px; right: 0; display: none; gap: 4px; background: rgba(58,46,36,0.85); border-radius: 8px; padding: 3px 6px; }
+  .mem-item.selected .item-controls { display: flex; }
+  .item-ctrl-btn { background: none; border: none; color: rgba(255,255,255,0.85); font-size: 12px; cursor: pointer; padding: 1px 3px; border-radius: 4px; }
+  .item-ctrl-btn:hover { color: white; background: rgba(255,255,255,0.15); }
+
+  .polaroid { background: white; padding: 10px 10px 36px 10px; box-shadow: 2px 4px 16px rgba(80,60,40,0.18), 0 1px 3px rgba(80,60,40,0.1); border-radius: 2px; position: relative; }
+  .polaroid img { display: block; width: 180px; height: 150px; object-fit: cover; border-radius: 1px; }
+  .polaroid .pol-caption { position: absolute; bottom: 6px; left: 10px; right: 10px; font-family: 'Caveat', cursive; font-size: 14px; color: var(--ink-light); text-align: center; outline: none; min-height: 20px; background: none; border: none; cursor: text; }
+  .polaroid .pol-caption:empty::before { content: 'add a caption...'; color: var(--ink-faint); font-style: italic; }
+  .polaroid::before { content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 50px; height: 20px; background: var(--tape); border-radius: 2px; }
+
+  .sticky-note { width: 160px; min-height: 120px; padding: 14px 12px 12px; border-radius: 2px; box-shadow: 3px 5px 14px rgba(80,60,40,0.15); position: relative; line-height: 1.5; color: var(--ink); }
+  .sticky-note::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.06); border-radius: 2px 2px 0 0; }
+  .note-text { outline: none; min-height: 80px; background: none; border: none; width: 100%; font-family: 'Caveat', cursive; font-size: 16px; color: inherit; cursor: text; }
+  .note-text:empty::before { content: 'write something...'; color: rgba(58,46,36,0.35); font-style: italic; pointer-events: none; }
+  .sticky-yellow { background: #fef9c3; }
+  .sticky-pink   { background: #fce7f3; }
+  .sticky-green  { background: #dcfce7; }
+  .sticky-blue   { background: #dbeafe; }
+
+  .sticker-item { cursor: grab; line-height: 1; filter: drop-shadow(1px 2px 4px rgba(80,60,40,0.2)); transition: transform 0.15s; display: inline-block; }
+  .sticker-item:hover { transform: scale(1.08); }
+
+  .music-card { background: white; border-radius: 12px; padding: 12px 14px; box-shadow: 2px 4px 14px rgba(80,60,40,0.14); display: flex; align-items: center; gap: 10px; width: 210px; border: 1px solid var(--cream-mid); }
+  .music-icon { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--mauve)); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; animation: spin 4s linear infinite paused; }
+  .music-icon.playing { animation-play-state: running; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .music-info { flex: 1; min-width: 0; }
+  .music-title { font-family: 'Caveat', cursive; font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .music-sub { font-size: 10px; color: var(--ink-faint); font-family: 'Lora', serif; }
+  .music-play { background: none; border: 1px solid var(--cream-mid); border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; transition: all 0.15s; color: var(--rose); }
+  .music-play:hover { background: var(--rose-light); }
+
+  .location-card { background: white; border-radius: 12px; padding: 10px 14px; box-shadow: 2px 4px 14px rgba(80,60,40,0.14); display: flex; align-items: center; gap: 8px; border: 1px solid var(--cream-mid); max-width: 180px; }
+  .loc-pin { font-size: 22px; }
+  .loc-text { font-family: 'Caveat', cursive; font-size: 15px; color: var(--ink); line-height: 1.3; }
+  .loc-sub { font-size: 10px; color: var(--ink-faint); font-family: 'Lora', serif; }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(50,38,28,0.45); z-index: 999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--cream); border-radius: 18px; padding: 28px; width: 340px; box-shadow: 0 20px 60px rgba(50,38,28,0.25); position: relative; animation: modalIn 0.25s ease; }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.93) translateY(10px); } to { opacity:1; transform:none; } }
+  .modal h2 { font-family:'Playfair Display',serif; font-size:20px; color:var(--ink); margin-bottom:18px; }
+  .modal-close { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:var(--ink-faint); cursor:pointer; }
+  .modal-close:hover { color:var(--ink); }
+  .modal label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.7px; color:var(--ink-faint); margin-bottom:6px; font-family:'Lora',serif; }
+  .modal input, .modal textarea { width:100%; background:white; border:1px solid var(--cream-mid); border-radius:10px; padding:10px 12px; font-family:'Lora',serif; font-size:14px; color:var(--ink); outline:none; margin-bottom:14px; transition:border-color 0.15s; }
+  .modal input:focus, .modal textarea:focus { border-color:var(--rose); }
+  .modal .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .btn-primary { background:var(--rose); color:white; border:none; border-radius:10px; padding:9px 20px; font-family:'Lora',serif; font-size:13px; cursor:pointer; transition:all 0.15s; }
+  .btn-primary:hover { background:#c4736a; transform:translateY(-1px); }
+  .btn-cancel { background:none; color:var(--ink-faint); border:1px solid var(--cream-mid); border-radius:10px; padding:9px 16px; font-family:'Lora',serif; font-size:13px; cursor:pointer; }
+  .btn-cancel:hover { background:var(--cream-dark); }
+
+  .sticker-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:16px; }
+  .sticker-opt { font-size:26px; text-align:center; padding:6px; border-radius:10px; cursor:pointer; border:2px solid transparent; transition:all 0.15s; line-height:1; }
+  .sticker-opt:hover { background:var(--cream-dark); transform:scale(1.15); }
+  .sticker-opt.selected { border-color:var(--rose); background:var(--rose-light); }
+
+  .color-opts { display:flex; gap:8px; margin-bottom:14px; }
+  .color-opt { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all 0.15s; }
+  .color-opt:hover { transform:scale(1.1); }
+  .color-opt.selected { border-color:var(--ink); }
+
+  .upload-area { border:2px dashed var(--cream-mid); border-radius:12px; padding:24px; text-align:center; cursor:pointer; margin-bottom:14px; transition:all 0.15s; background:white; }
+  .upload-area:hover { border-color:var(--rose); background:var(--rose-light); }
+  .upload-area .up-icon { font-size:28px; margin-bottom:6px; }
+  .upload-area p { font-size:13px; color:var(--ink-faint); }
+  #fileInput { display:none; }
+
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:white; border-radius:24px; padding:10px 22px; font-family:'Caveat',cursive; font-size:16px; z-index:9999; transition:transform 0.3s ease; pointer-events:none; white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  .resize-handle { position:absolute; bottom:-6px; right:-6px; width:14px; height:14px; background:white; border:2px solid var(--rose); border-radius:50%; cursor:se-resize; display:none; z-index:10; }
+  .mem-item.selected .resize-handle { display:block; }
+
+  .empty-hint { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+  .empty-hint .eh-flower { font-size:48px; margin-bottom:12px; opacity:0.4; }
+  .empty-hint p { font-family:'Playfair Display',serif; font-style:italic; font-size:16px; color:var(--ink-faint); }
+
+  .corner-deco { position:fixed; pointer-events:none; opacity:0.18; font-size:64px; z-index:0; }
+  .corner-deco.tl { top:60px; left:8px; transform:rotate(-20deg); }
+  .corner-deco.br { bottom:8px; right:80px; transform:rotate(15deg); }
+
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-thumb { background:var(--cream-mid); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<span class="corner-deco tl">🌸</span>
+<span class="corner-deco br">🌿</span>
+
+<div class="topbar">
+  <div class="topbar-logo">🌸 Pekzya Diary</div>
+  <div class="topbar-date" id="topbarDate"></div>
+  <div class="topbar-actions">
+    <button class="topbar-btn" onclick="undoLast()">↩ Undo</button>
+    <button class="topbar-btn" onclick="clearCanvas()">✕ Clear day</button>
+  </div>
+</div>
+
+<div class="app-body">
+  <div class="calendar-panel">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month" id="calMonth"></div>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+      <div class="cal-legend-title">Memories</div>
+      <div class="memory-list" id="memoryList"></div>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <div id="canvas">
+      <div class="empty-hint" id="emptyHint">
+        <div class="eh-flower">🌻</div>
+        <p>Start adding memories with the toolbar →</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="tool-btn" onclick="openModal('photoModal')">
+      <span class="t-icon">📷</span><span class="t-label">Photo</span>
+    </button>
+    <button class="tool-btn" onclick="openModal('noteModal')">
+      <span class="t-icon">📝</span><span class="t-label">Note</span>
+    </button>
+    <button class="tool-btn" onclick="openModal('stickerModal')">
+      <span class="t-icon">✨</span><span class="t-label">Sticker</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" onclick="openModal('musicModal')">
+      <span class="t-icon">🎵</span><span class="t-label">Music</span>
+    </button>
+    <button class="tool-btn" onclick="openModal('locationModal')">
+      <span class="t-icon">📍</span><span class="t-label">Location</span>
+    </button>
+  </div>
+</div>
+
+<!-- Photo Modal -->
+<div class="modal-bg" id="photoModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('photoModal')">×</button>
+    <h2>📷 Add a Photo</h2>
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <div class="up-icon">🖼</div>
+      <p>Click to upload a photo</p>
+      <p style="font-size:11px;margin-top:4px;">JPG, PNG, GIF, WebP</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" onchange="handlePhotoUpload(event)">
+    <label>Caption (optional)</label>
+    <input type="text" id="photoCaption" placeholder="a sweet memory...">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('photoModal')">Cancel</button>
+      <button class="btn-primary" onclick="addPhoto()">Add to diary ✦</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal-bg" id="noteModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('noteModal')">×</button>
+    <h2>📝 Add a Note</h2>
+    <label>Note color</label>
+    <div class="color-opts">
+      <div class="color-opt selected" style="background:#fef9c3;" data-color="sticky-yellow" onclick="selectColor(this)"></div>
+      <div class="color-opt" style="background:#fce7f3;" data-color="sticky-pink" onclick="selectColor(this)"></div>
+      <div class="color-opt" style="background:#dcfce7;" data-color="sticky-green" onclick="selectColor(this)"></div>
+      <div class="color-opt" style="background:#dbeafe;" data-color="sticky-blue" onclick="selectColor(this)"></div>
+    </div>
+    <label>Write your note</label>
+    <textarea id="noteText" rows="4" placeholder="Dear diary..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('noteModal')">Cancel</button>
+      <button class="btn-primary" onclick="addNote()">Add to diary ✦</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sticker Modal -->
+<div class="modal-bg" id="stickerModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('stickerModal')">×</button>
+    <h2>✨ Choose a Sticker</h2>
+    <div class="sticker-grid" id="stickerGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('stickerModal')">Cancel</button>
+      <button class="btn-primary" onclick="addSticker()">Add to diary ✦</button>
+    </div>
+  </div>
+</div>
+
+<!-- Music Modal -->
+<div class="modal-bg" id="musicModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('musicModal')">×</button>
+    <h2>🎵 Attach Music</h2>
+    <label>Song title</label>
+    <input type="text" id="musicTitle" placeholder="e.g. Golden Hour">
+    <label>Artist</label>
+    <input type="text" id="musicArtist" placeholder="e.g. JVKE">
+    <label>Link (Spotify / YouTube)</label>
+    <input type="text" id="musicLink" placeholder="https://...">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('musicModal')">Cancel</button>
+      <button class="btn-primary" onclick="addMusic()">Add to diary ✦</button>
+    </div>
+  </div>
+</div>
+
+<!-- Location Modal -->
+<div class="modal-bg" id="locationModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('locationModal')">×</button>
+    <h2>📍 Add Location</h2>
+    <label>Place name</label>
+    <input type="text" id="locName" placeholder="e.g. Paris, France">
+    <label>Note (optional)</label>
+    <input type="text" id="locNote" placeholder="e.g. at sunset...">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('locationModal')">Cancel</button>
+      <button class="btn-primary" onclick="addLocation()">Add to diary ✦</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state = {
+  memories: {}, selectedDate: null, currentMonth: new Date(),
+  selectedSticker: null, selectedColor: 'sticky-yellow',
+  pendingPhotoData: null, history: [], zCounter: 10,
+};
+
+const STICKERS = [
+  '🌸','🌺','🌻','🌷','🌹','💐','🍃','🌿','🍀','🌱','🪴','🍁',
+  '⭐','✨','💫','🌟','⚡','🔥','💕','💖','💗','💛','🧡','💜',
+  '🦋','🐝','🐞','🦊','🐰','🐻','🎀','🎁','🎈','🎉','🎊','🪅',
+  '☀️','🌈','🌙','⛅','🌊','🏔','🍓','🍑','🍋','🍇','🍦','🧁',
+  '📌','🖊','📎','🔖','📚','🗝','🎶','🎸','🎹','🎨','🖌','🎭',
+];
+
+window.addEventListener('load', () => {
+  state.selectedDate = todayKey();
+  loadFromStorage();
+  renderCalendar();
+  populateStickerGrid();
+  updateTopbarDate();
+  renderCanvas();
+  enableCanvasDrag();
+});
+
+function todayKey() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n) { return String(n).padStart(2,'0'); }
+function dateKey(y,m,d) { return `${y}-${pad(m)}-${pad(d)}`; }
+
+function saveToStorage() { try { localStorage.setItem('petalDiary', JSON.stringify(state.memories)); } catch(e){} }
+function loadFromStorage() { try { const r=localStorage.getItem('petalDiary'); if(r) state.memories=JSON.parse(r); } catch(e){} }
+
+function renderCalendar() {
+  const y=state.currentMonth.getFullYear(), m=state.currentMonth.getMonth();
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonth').textContent=`${months[m]} ${y}`;
+  const firstDay=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), today=todayKey();
+  let html=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDay;i++) html+='<div></div>';
+  for(let d=1;d<=days;d++){
+    const k=dateKey(y,m+1,d);
+    let cls='cal-day';
+    if(k===today) cls+=' today';
+    if(k===state.selectedDate) cls+=' selected';
+    if(state.memories[k]&&state.memories[k].length) cls+=' has-memories';
+    html+=`<div class="${cls}" onclick="selectDay('${k}')">${d}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  renderMemoryList();
+}
+
+function changeMonth(dir) { state.currentMonth.setMonth(state.currentMonth.getMonth()+dir); renderCalendar(); }
+
+function selectDay(key) { state.selectedDate=key; renderCalendar(); updateTopbarDate(); renderCanvas(); }
+
+function updateTopbarDate() {
+  const [y,m,d]=state.selectedDate.split('-').map(Number);
+  document.getElementById('topbarDate').textContent=new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+function renderMemoryList() {
+  const items=state.memories[state.selectedDate]||[], el=document.getElementById('memoryList');
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--ink-faint);font-family:\'Lora\',serif;">No memories yet for this day.</div>'; return; }
+  const icons={photo:'📷',note:'📝',sticker:'✨',music:'🎵',location:'📍'};
+  el.innerHTML=items.map((item,i)=>{
+    const lbl=item.type==='photo'?(item.caption||'Photo'):item.type==='note'?(item.text||'Note').slice(0,20):item.type==='sticker'?item.emoji:item.type==='music'?item.title:item.location;
+    return `<div class="memory-chip" onclick="focusItem(${i})"><span>${icons[item.type]||'•'}</span>${lbl}</div>`;
+  }).join('');
+}
+
+function populateStickerGrid() {
+  document.getElementById('stickerGrid').innerHTML=STICKERS.map(s=>`<div class="sticker-opt" onclick="pickSticker(this,'${s}')">${s}</div>`).join('');
+}
+function pickSticker(el,emoji) {
+  document.querySelectorAll('.sticker-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); state.selectedSticker=emoji;
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='photoModal'){ state.pendingPhotoData=null; document.getElementById('photoCaption').value=''; document.getElementById('uploadArea').innerHTML='<div class="up-icon">🖼</div><p>Click to upload a photo</p><p style="font-size:11px;margin-top:4px;">JPG, PNG, GIF, WebP</p>'; }
+  if(id==='noteModal') document.getElementById('noteText').value='';
+  if(id==='stickerModal'){ state.selectedSticker=null; document.querySelectorAll('.sticker-opt').forEach(e=>e.classList.remove('selected')); }
+  if(id==='musicModal'){ ['musicTitle','musicArtist','musicLink'].forEach(i=>document.getElementById(i).value=''); }
+  if(id==='locationModal'){ ['locName','locNote'].forEach(i=>document.getElementById(i).value=''); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) bg.classList.remove('open'); }));
+
+function selectColor(el) {
+  document.querySelectorAll('.color-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); state.selectedColor=el.dataset.color;
+}
+
+function handlePhotoUpload(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ state.pendingPhotoData=ev.target.result; document.getElementById('uploadArea').innerHTML=`<img src="${ev.target.result}" style="max-height:100px;border-radius:8px;margin:auto;display:block;"><p style="margin-top:6px;font-size:11px;">Photo ready! ✓</p>`; };
+  reader.readAsDataURL(file);
+}
+
+function addPhoto() {
+  if(!state.pendingPhotoData){ showToast('Please upload a photo first 🌸'); return; }
+  pushMemory({ type:'photo', src:state.pendingPhotoData, caption:document.getElementById('photoCaption').value, x:randX(), y:randY(), rotation:randRot(), z:++state.zCounter });
+  closeModal('photoModal'); document.getElementById('fileInput').value='';
+  showToast('Photo added! 📷');
+}
+
+function addNote() {
+  const text=document.getElementById('noteText').value.trim();
+  if(!text){ showToast('Write something first ✏️'); return; }
+  pushMemory({ type:'note', text, color:state.selectedColor, x:randX(), y:randY(), z:++state.zCounter });
+  closeModal('noteModal'); showToast('Note added! 📝');
+}
+
+function addSticker() {
+  if(!state.selectedSticker){ showToast('Pick a sticker first ✨'); return; }
+  pushMemory({ type:'sticker', emoji:state.selectedSticker, x:randX(), y:randY(), size:48, rotation:randRot()*0.5, z:++state.zCounter });
+  closeModal('stickerModal'); showToast('Sticker added! ✨');
+}
+
+function addMusic() {
+  const title=document.getElementById('musicTitle').value.trim();
+  if(!title){ showToast('Add a song title 🎵'); return; }
+  pushMemory({ type:'music', title, artist:document.getElementById('musicArtist').value, link:document.getElementById('musicLink').value.trim(), x:randX(), y:randY(), z:++state.zCounter, playing:false });
+  closeModal('musicModal'); showToast('Music attached! 🎵');
+}
+
+function addLocation() {
+  const loc=document.getElementById('locName').value.trim();
+  if(!loc){ showToast('Enter a place name 📍'); return; }
+  pushMemory({ type:'location', location:loc, note:document.getElementById('locNote').value, x:randX(), y:randY(), z:++state.zCounter });
+  closeModal('locationModal'); showToast('Location added! 📍');
+}
+
+function pushMemory(item) {
+  if(!state.memories[state.selectedDate]) state.memories[state.selectedDate]=[];
+  state.memories[state.selectedDate].push(item);
+  state.history.push({ date:state.selectedDate, index:state.memories[state.selectedDate].length-1 });
+  saveToStorage(); renderCanvas(); renderCalendar();
+}
+
+function renderCanvas() {
+  const canvas=document.getElementById('canvas');
+  canvas.querySelectorAll('.mem-item').forEach(e=>e.remove());
+  const items=state.memories[state.selectedDate]||[];
+  document.getElementById('emptyHint').style.display=items.length?'none':'block';
+  items.forEach((item,idx)=>{ const el=createItemEl(item,idx); canvas.appendChild(el); makeDraggable(el,idx); });
+}
+
+function createItemEl(item,idx) {
+  const wrap=document.createElement('div');
+  wrap.className='mem-item'; wrap.dataset.idx=idx;
+  wrap.style.left=item.x+'px'; wrap.style.top=item.y+'px';
+  wrap.style.zIndex=item.z||10;
+  wrap.style.transform=`rotate(${item.rotation||0}deg)`;
+
+  const ctrl=document.createElement('div'); ctrl.className='item-controls';
+  ctrl.innerHTML=`<button class="item-ctrl-btn" onclick="rotateItem(${idx},-5)">↺</button><button class="item-ctrl-btn" onclick="rotateItem(${idx},5)">↻</button><button class="item-ctrl-btn" onclick="deleteItem(${idx})">✕</button>`;
+  wrap.appendChild(ctrl);
+
+  if(item.type==='photo'){
+    const pol=document.createElement('div'); pol.className='polaroid';
+    pol.innerHTML=`<img src="${item.src}" alt="memory"><div class="pol-caption" contenteditable="true" onblur="updateCaption(${idx},this)">${item.caption||''}</div>`;
+    if(item.width) pol.querySelector('img').style.cssText=`width:${item.width}px;height:${item.width*150/180}px;`;
+    wrap.appendChild(pol);
+    const rh=document.createElement('div'); rh.className='resize-handle'; wrap.appendChild(rh); makeResizable(wrap,rh,idx);
+  } else if(item.type==='note'){
+    const note=document.createElement('div'); note.className=`sticky-note ${item.color}`;
+    const ta=document.createElement('div'); ta.className='note-text'; ta.contentEditable='true'; ta.textContent=item.text;
+    ta.addEventListener('blur',()=>updateNoteText(idx,ta));
+    note.appendChild(ta); wrap.appendChild(note);
+  } else if(item.type==='sticker'){
+    const s=document.createElement('span'); s.className='sticker-item'; s.textContent=item.emoji; s.style.fontSize=(item.size||48)+'px';
+    wrap.appendChild(s);
+    const rh=document.createElement('div'); rh.className='resize-handle'; wrap.appendChild(rh); makeStickerResizable(wrap,rh,idx);
+  } else if(item.type==='music'){
+    const mc=document.createElement('div'); mc.className='music-card';
+    mc.innerHTML=`<div class="music-icon${item.playing?' playing':''}" id="micon${idx}">🎵</div><div class="music-info"><div class="music-title">${item.title}</div><div class="music-sub">${item.artist||'Unknown artist'}</div></div><button class="music-play" onclick="toggleMusic(${idx},this)">▶</button>`;
+    wrap.appendChild(mc);
+  } else if(item.type==='location'){
+    const lc=document.createElement('div'); lc.className='location-card';
+    lc.innerHTML=`<div class="loc-pin">📍</div><div><div class="loc-text">${item.location}</div>${item.note?`<div class="loc-sub">${item.note}</div>`:''}</div>`;
+    wrap.appendChild(lc);
+  }
+
+  wrap.addEventListener('mousedown',e=>{ if(!e.target.closest('.item-ctrl-btn')&&!e.target.closest('.resize-handle')&&!e.target.closest('[contenteditable]')&&!e.target.closest('.music-play')) selectItem(wrap); });
+  return wrap;
+}
+
+function selectItem(el) {
+  document.querySelectorAll('.mem-item').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const idx=parseInt(el.dataset.idx), items=state.memories[state.selectedDate]||[];
+  items[idx].z=++state.zCounter; el.style.zIndex=state.zCounter; saveToStorage();
+}
+
+function deleteItem(idx) {
+  (state.memories[state.selectedDate]||[]).splice(idx,1);
+  saveToStorage(); renderCanvas(); renderCalendar(); showToast('Removed ✕');
+}
+
+function rotateItem(idx,deg) {
+  const items=state.memories[state.selectedDate]||[];
+  items[idx].rotation=(items[idx].rotation||0)+deg;
+  const el=document.querySelector(`.mem-item[data-idx="${idx}"]`);
+  if(el) el.style.transform=`rotate(${items[idx].rotation}deg)`;
+  saveToStorage();
+}
+
+function updateCaption(idx,el) { const items=state.memories[state.selectedDate]||[]; if(items[idx]){items[idx].caption=el.textContent;saveToStorage();} }
+function updateNoteText(idx,el) { const items=state.memories[state.selectedDate]||[]; if(items[idx]){items[idx].text=el.textContent;saveToStorage();} }
+
+function toggleMusic(idx,btn) {
+  const items=state.memories[state.selectedDate]||[], item=items[idx]; if(!item) return;
+  item.playing=!item.playing;
+  btn.textContent=item.playing?'⏸':'▶';
+  const icon=document.getElementById('micon'+idx);
+  if(icon) icon.classList.toggle('playing',item.playing);
+  if(item.link&&item.playing) window.open(item.link,'_blank');
+  saveToStorage();
+}
+
+function focusItem(idx) { const el=document.querySelector(`.mem-item[data-idx="${idx}"]`); if(el) selectItem(el); }
+
+function makeDraggable(el,idx) {
+  let sx,sy,ox,oy,dragging=false;
+  el.addEventListener('mousedown',e=>{
+    if(e.target.closest('.item-ctrl-btn')||e.target.closest('.resize-handle')||e.target.closest('[contenteditable]')||e.target.closest('.music-play')) return;
+    dragging=true; sx=e.clientX; sy=e.clientY;
+    const r=el.getBoundingClientRect(), c=document.getElementById('canvas').getBoundingClientRect();
+    ox=r.left-c.left; oy=r.top-c.top; e.preventDefault(); el.style.cursor='grabbing';
+  });
+  window.addEventListener('mousemove',e=>{ if(!dragging) return; el.style.left=Math.max(0,ox+(e.clientX-sx))+'px'; el.style.top=Math.max(0,oy+(e.clientY-sy))+'px'; });
+  window.addEventListener('mouseup',e=>{
+    if(!dragging) return; dragging=false; el.style.cursor='grab';
+    const items=state.memories[state.selectedDate]||[];
+    if(items[idx]){items[idx].x=parseInt(el.style.left);items[idx].y=parseInt(el.style.top);saveToStorage();}
+  });
+}
+
+function enableCanvasDrag() {
+  document.getElementById('canvas').addEventListener('click',e=>{
+    if(e.target===document.getElementById('canvas')||e.target.closest('.empty-hint'))
+      document.querySelectorAll('.mem-item').forEach(el=>el.classList.remove('selected'));
+  });
+}
+
+function makeResizable(wrap,handle,idx) {
+  handle.addEventListener('mousedown',e=>{
+    e.stopPropagation(); e.preventDefault();
+    const startX=e.clientX, img=wrap.querySelector('img'), startW=img?img.offsetWidth:180;
+    const onMove=ev=>{ const nw=Math.max(100,startW+(ev.clientX-startX)); if(img){img.style.width=nw+'px';img.style.height=(nw*150/180)+'px';} const items=state.memories[state.selectedDate]||[]; if(items[idx]) items[idx].width=nw; };
+    const onUp=()=>{ saveToStorage(); window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
+    window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+  });
+}
+
+function makeStickerResizable(wrap,handle,idx) {
+  handle.addEventListener('mousedown',e=>{
+    e.stopPropagation(); e.preventDefault();
+    const startX=e.clientX, s=wrap.querySelector('.sticker-item'), startSize=parseInt(s.style.fontSize)||48;
+    const onMove=ev=>{ const ns=Math.max(20,Math.min(120,startSize+(ev.clientX-startX))); s.style.fontSize=ns+'px'; const items=state.memories[state.selectedDate]||[]; if(items[idx]) items[idx].size=ns; };
+    const onUp=()=>{ saveToStorage(); window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
+    window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+  });
+}
+
+function undoLast() {
+  if(!state.history.length){ showToast('Nothing to undo'); return; }
+  const {date,index}=state.history.pop();
+  if(state.memories[date]){ state.memories[date].splice(index,1); if(!state.memories[date].length) delete state.memories[date]; }
+  saveToStorage(); renderCanvas(); renderCalendar(); showToast('Undone ↩');
+}
+
+function clearCanvas() {
+  if(!confirm('Clear all memories for this day?')) return;
+  delete state.memories[state.selectedDate];
+  state.history=state.history.filter(h=>h.date!==state.selectedDate);
+  saveToStorage(); renderCanvas(); renderCalendar(); showToast('Canvas cleared ✕');
+}
+
+function randX() { return Math.floor(Math.random()*(document.getElementById('canvas').offsetWidth-250))+80; }
+function randY() { return Math.floor(Math.random()*(document.getElementById('canvas').offsetHeight-220))+60; }
+function randRot() { return (Math.random()-0.5)*8; }
+
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
