@@ -2,360 +2,568 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pekzya Diary — My Memory Board</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pekzya Diary</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;600&family=Dancing+Script:wght@400;600&family=Patrick+Hand&family=Architects+Daughter&family=Indie+Flower&family=Shadows+Into+Light&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --cream: #faf6f0;
-    --cream-dark: #f2ebe0;
-    --cream-mid: #ede5d8;
-    --ink: #3a2e24;
-    --ink-light: #6b5a48;
-    --ink-faint: #a0907e;
-    --rose: #d4867a;
-    --rose-light: #f0c9c2;
-    --mauve: #9b8cb0;
-    --gold: #c9a96e;
-    --tape: rgba(220,200,160,0.55);
+/* ═══ TOKENS ══════════════════════════════════════════════════════════ */
+:root{
+  --cream:#faf6f0; --cream-dark:#f2ebe0; --cream-mid:#ede5d8;
+  --ink:#3a2e24; --ink-light:#6b5a48; --ink-faint:#a0907e;
+  --rose:#d4867a; --rose-light:#f0c9c2;
+  --mauve:#9b8cb0; --gold:#c9a96e;
+  --tape:rgba(220,200,160,0.55);
+  --top:52px;
+  --bot:62px; /* mobile bottom nav */
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{height:100%;height:-webkit-fill-available;}
+body{
+  font-family:'Lora',serif;
+  background:var(--cream);
+  color:var(--ink);
+  height:100%;
+  height:-webkit-fill-available;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(180,160,130,.1) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(180,160,130,.1) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+ 
+/* ═══ TOPBAR ══════════════════════════════════════════════════════════ */
+.topbar{
+  position:relative;z-index:300;flex-shrink:0;
+  height:var(--top);
+  display:flex;align-items:center;gap:8px;
+  padding:0 12px;
+  background:rgba(250,246,240,.97);
+  border-bottom:1px solid rgba(180,155,120,.25);
+  backdrop-filter:blur(12px);
+}
+.topbar-logo{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:18px;color:var(--ink);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;
+}
+.topbar-center{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  gap:6px;min-width:0;overflow:hidden;
+}
+.topbar-date{
+  font-family:'Caveat',cursive;font-size:15px;color:var(--ink-light);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.save-indicator{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-faint);flex-shrink:0;}
+.save-dot{width:5px;height:5px;border-radius:50%;background:var(--ink-faint);transition:background .3s;}
+.save-indicator.saving .save-dot{background:var(--gold);animation:pulse .6s infinite;}
+.save-indicator.saved .save-dot{background:#7cb87c;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.topbar-actions{display:flex;gap:5px;flex-shrink:0;}
+.topbar-btn{
+  font-family:'Lora',serif;font-size:10px;color:var(--ink-light);
+  background:none;border:1px solid var(--cream-mid);border-radius:16px;
+  padding:4px 9px;cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.topbar-btn:hover,.topbar-btn:active{background:var(--cream-mid);color:var(--ink);}
+ 
+/* ═══ APP SHELL ═══════════════════════════════════════════════════════ */
+/* Desktop: 3-column layout inside fixed-height shell */
+.app-shell{
+  flex:1;
+  display:flex;
+  min-height:0;
+  position:relative;
+  z-index:1;
+}
+ 
+/* ═══ CALENDAR PANEL ══════════════════════════════════════════════════ */
+.calendar-panel{
+  width:220px;flex-shrink:0;
+  background:rgba(250,246,240,.93);
+  border-right:1px solid rgba(180,155,120,.2);
+  display:flex;flex-direction:column;
+  padding:14px;gap:10px;
+  backdrop-filter:blur(6px);
+  overflow-y:auto;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  z-index:200;
+}
+.cal-header{display:flex;align-items:center;justify-content:space-between;}
+.cal-month{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--ink);}
+.cal-nav{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:6px;transition:all .15s;}
+.cal-nav:hover{background:var(--cream-mid);color:var(--ink);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;}
+.cal-dow{text-align:center;font-size:9px;color:var(--ink-faint);padding:3px 0;text-transform:uppercase;letter-spacing:.4px;}
+.cal-day{text-align:center;color:var(--ink-light);padding:5px 2px;border-radius:50%;cursor:pointer;transition:all .15s;font-family:'Caveat',cursive;font-size:13px;position:relative;}
+.cal-day:hover{background:var(--cream-mid);color:var(--ink);}
+.cal-day.today{color:var(--rose);font-weight:700;}
+.cal-day.selected{background:var(--rose);color:white;}
+.cal-day.has-memories::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--gold);}
+.cal-day.selected::after{background:rgba(255,255,255,.7);}
+.cal-legend-title{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--ink-faint);margin-bottom:6px;}
+.memory-list{display:flex;flex-direction:column;gap:5px;}
+.memory-chip{font-family:'Caveat',cursive;font-size:13px;color:var(--ink-light);background:var(--cream-dark);border-radius:8px;padding:5px 9px;display:flex;align-items:center;gap:5px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+.memory-chip:hover,.memory-chip:active{border-color:var(--cream-mid);background:white;}
+ 
+/* ═══ CANVAS SCROLL AREA ══════════════════════════════════════════════ */
+.canvas-wrap{
+  flex:1;
+  min-width:0;
+  min-height:0;
+  /* ← scroll in both directions */
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  position:relative;
+}
+.canvas-wrap::-webkit-scrollbar{width:4px;height:4px;}
+.canvas-wrap::-webkit-scrollbar-thumb{background:var(--cream-mid);border-radius:2px;}
+ 
+#canvas{
+  position:relative;
+  /* Large canvas — user scrolls around */
+  width:1600px;
+  height:1000px;
+  cursor:default;
+}
+ 
+/* ═══ DESKTOP RIGHT TOOLBAR ═══════════════════════════════════════════ */
+.toolbar{
+  width:68px;flex-shrink:0;
+  background:rgba(250,246,240,.93);
+  border-left:1px solid rgba(180,155,120,.2);
+  display:flex;flex-direction:column;align-items:center;
+  padding:14px 0;gap:5px;
+  backdrop-filter:blur(6px);
+  overflow-y:auto;
+}
+.tool-btn{
+  width:48px;height:48px;border-radius:14px;
+  border:1px solid var(--cream-mid);background:white;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;color:var(--ink-light);gap:2px;flex-shrink:0;
+}
+.tool-btn:hover{background:var(--cream-dark);transform:translateY(-1px);box-shadow:0 3px 10px rgba(80,60,40,.1);color:var(--ink);}
+.tool-btn:active{transform:scale(.95);}
+.tool-btn .t-icon{font-size:18px;line-height:1;}
+.tool-btn .t-label{font-size:8px;font-family:'Lora',serif;letter-spacing:.3px;}
+.tool-sep{width:28px;height:1px;background:var(--cream-mid);margin:2px 0;}
+ 
+/* ═══ MEM ITEMS ═══════════════════════════════════════════════════════ */
+.mem-item{position:absolute;cursor:grab;user-select:none;touch-action:none;}
+.mem-item:active{cursor:grabbing;}
+.mem-item .item-controls{
+  position:absolute;top:-30px;right:0;display:none;
+  gap:3px;background:rgba(58,46,36,.9);border-radius:8px;padding:3px 6px;white-space:nowrap;z-index:20;
+}
+.mem-item.selected .item-controls{display:flex;}
+.item-ctrl-btn{background:none;border:none;color:rgba(255,255,255,.85);font-size:12px;cursor:pointer;padding:1px 4px;border-radius:4px;}
+.item-ctrl-btn:hover{color:white;background:rgba(255,255,255,.15);}
+ 
+/* ═══ POLAROID ════════════════════════════════════════════════════════ */
+.polaroid{background:white;padding:10px 10px 36px;box-shadow:2px 4px 16px rgba(80,60,40,.18);border-radius:2px;position:relative;}
+.polaroid img{display:block;width:180px;height:150px;object-fit:cover;border-radius:1px;}
+.polaroid .pol-caption{position:absolute;bottom:6px;left:10px;right:10px;font-family:'Caveat',cursive;font-size:14px;color:var(--ink-light);text-align:center;outline:none;min-height:20px;background:none;border:none;cursor:text;}
+.polaroid .pol-caption:empty::before{content:'add a caption...';color:var(--ink-faint);font-style:italic;}
+.polaroid::before{content:'';position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-2deg);width:50px;height:20px;background:var(--tape);border-radius:2px;}
+ 
+/* ═══ STICKY NOTE ═════════════════════════════════════════════════════ */
+.sticky-note{padding:14px 12px 12px;border-radius:2px;box-shadow:3px 5px 14px rgba(80,60,40,.15);position:relative;line-height:1.5;color:var(--ink);overflow:hidden;}
+.sticky-note::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.06);border-radius:2px 2px 0 0;}
+.note-text{outline:none;min-height:60px;background:none;border:none;width:100%;color:inherit;cursor:text;display:block;word-break:break-word;}
+.note-text:empty::before{content:'write something...';color:rgba(58,46,36,.35);font-style:italic;pointer-events:none;}
+.sticky-yellow{background:#fef9c3;} .sticky-pink{background:#fce7f3;}
+.sticky-green{background:#dcfce7;}  .sticky-blue{background:#dbeafe;}
+.note-resize-handle{position:absolute;bottom:0;right:0;width:18px;height:18px;cursor:se-resize;display:none;z-index:10;}
+.note-resize-handle::after{content:'';position:absolute;bottom:3px;right:3px;width:9px;height:9px;border-right:2px solid rgba(58,46,36,.3);border-bottom:2px solid rgba(58,46,36,.3);}
+.mem-item.selected .note-resize-handle{display:block;}
+ 
+/* ═══ STICKER ═════════════════════════════════════════════════════════ */
+.sticker-item{cursor:grab;line-height:1;filter:drop-shadow(1px 2px 4px rgba(80,60,40,.2));transition:transform .15s;display:inline-block;}
+.sticker-item:hover{transform:scale(1.08);}
+ 
+/* ═══ MUSIC CARD ══════════════════════════════════════════════════════ */
+.music-card{background:white;border-radius:12px;padding:12px 14px;box-shadow:2px 4px 14px rgba(80,60,40,.14);display:flex;align-items:center;gap:10px;width:210px;border:1px solid var(--cream-mid);}
+.music-icon{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--mauve));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;animation:spin 4s linear infinite paused;}
+.music-icon.playing{animation-play-state:running;}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.music-info{flex:1;min-width:0;}
+.music-title{font-family:'Caveat',cursive;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.music-sub{font-size:10px;color:var(--ink-faint);font-family:'Lora',serif;}
+.music-play{background:none;border:1px solid var(--cream-mid);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;transition:all .15s;color:var(--rose);}
+.music-play:hover{background:var(--rose-light);}
+ 
+/* ═══ LOCATION CARD ═══════════════════════════════════════════════════ */
+.location-card{background:white;border-radius:12px;padding:10px 14px;box-shadow:2px 4px 14px rgba(80,60,40,.14);display:flex;align-items:center;gap:8px;border:1px solid var(--cream-mid);max-width:180px;}
+.loc-pin{font-size:22px;}
+.loc-text{font-family:'Caveat',cursive;font-size:15px;color:var(--ink);line-height:1.3;}
+.loc-sub{font-size:10px;color:var(--ink-faint);font-family:'Lora',serif;}
+ 
+/* ═══ RESIZE HANDLE ═══════════════════════════════════════════════════ */
+.resize-handle{position:absolute;bottom:-6px;right:-6px;width:14px;height:14px;background:white;border:2px solid var(--rose);border-radius:50%;cursor:se-resize;display:none;z-index:10;}
+.mem-item.selected .resize-handle{display:block;}
+ 
+/* ═══ EMPTY HINT ══════════════════════════════════════════════════════ */
+.empty-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;}
+.empty-hint .eh-flower{font-size:44px;margin-bottom:10px;opacity:.35;}
+.empty-hint p{font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--ink-faint);}
+ 
+/* ═══ DECORATIVE ══════════════════════════════════════════════════════ */
+.corner-deco{position:fixed;pointer-events:none;opacity:.12;font-size:60px;z-index:0;}
+.corner-deco.tl{top:65px;left:6px;transform:rotate(-20deg);}
+.corner-deco.br{bottom:8px;right:75px;transform:rotate(15deg);}
+ 
+/* ═══ MODAL ═══════════════════════════════════════════════════════════ */
+.modal-bg{position:fixed;inset:0;background:rgba(50,38,28,.5);z-index:900;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--cream);border-radius:18px;padding:22px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(50,38,28,.3);position:relative;animation:mIn .22s ease;max-height:90dvh;overflow-y:auto;}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal h2{font-family:'Playfair Display',serif;font-size:18px;color:var(--ink);margin-bottom:14px;}
+.modal-close{position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;color:var(--ink-faint);cursor:pointer;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+.modal label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--ink-faint);margin-bottom:5px;font-family:'Lora',serif;}
+.modal input,.modal textarea{width:100%;background:white;border:1px solid var(--cream-mid);border-radius:10px;padding:9px 11px;font-family:'Lora',serif;font-size:14px;color:var(--ink);outline:none;margin-bottom:12px;transition:border-color .15s;-webkit-appearance:none;}
+.modal input:focus,.modal textarea:focus{border-color:var(--rose);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.btn-primary{background:var(--rose);color:white;border:none;border-radius:10px;padding:9px 20px;font-family:'Lora',serif;font-size:13px;cursor:pointer;transition:all .15s;}
+.btn-primary:hover,.btn-primary:active{background:#c4736a;}
+.btn-cancel{background:none;color:var(--ink-faint);border:1px solid var(--cream-mid);border-radius:10px;padding:9px 14px;font-family:'Lora',serif;font-size:13px;cursor:pointer;}
+.btn-cancel:hover,.btn-cancel:active{background:var(--cream-dark);}
+ 
+/* ═══ MODAL COMPONENTS ════════════════════════════════════════════════ */
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.slider-row input[type=range]{flex:1;accent-color:var(--rose);height:4px;}
+.slider-val{font-family:'Caveat',cursive;font-size:15px;color:var(--ink-light);min-width:38px;text-align:right;}
+.font-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px;}
+.font-opt{padding:9px 8px;border-radius:10px;border:2px solid var(--cream-mid);cursor:pointer;text-align:center;color:var(--ink);transition:all .15s;background:white;}
+.font-opt:hover,.font-opt:active{border-color:var(--rose-light);background:var(--rose-light);}
+.font-opt.selected{border-color:var(--rose);background:var(--rose-light);}
+.font-opt .font-name{font-size:9px;color:var(--ink-faint);margin-top:2px;font-family:'Lora',serif;}
+.sticker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px;}
+.sticker-opt{font-size:24px;text-align:center;padding:6px;border-radius:10px;cursor:pointer;border:2px solid transparent;transition:all .15s;line-height:1;}
+.sticker-opt:hover,.sticker-opt:active{background:var(--cream-dark);transform:scale(1.12);}
+.sticker-opt.selected{border-color:var(--rose);background:var(--rose-light);}
+.color-opts{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.color-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;}
+.color-opt:hover,.color-opt:active{transform:scale(1.1);}
+.color-opt.selected{border-color:var(--ink);}
+.upload-area{border:2px dashed var(--cream-mid);border-radius:12px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .15s;background:white;}
+.upload-area:hover,.upload-area:active{border-color:var(--rose);background:var(--rose-light);}
+.upload-area .up-icon{font-size:26px;margin-bottom:5px;}
+.upload-area p{font-size:12px;color:var(--ink-faint);}
+#fileInput{display:none;}
+ 
+/* ═══ TOAST ═══════════════════════════════════════════════════════════ */
+.toast{
+  position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--ink);color:white;border-radius:24px;
+  padding:9px 20px;font-family:'Caveat',cursive;font-size:15px;
+  z-index:9999;transition:transform .3s ease;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+ 
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE BOTTOM NAV — hidden on desktop
+════════════════════════════════════════════════════════════════════ */
+.mobile-nav{display:none;}
+.mob-cal-btn{display:none;}
+ 
+/* ════════════════════════════════════════════════════════════════════
+   RESPONSIVE — TABLET ≤ 900px
+════════════════════════════════════════════════════════════════════ */
+@media(max-width:900px){
+ 
+  /* Calendar becomes a slide-in drawer */
+  .calendar-panel{
+    position:fixed;
+    top:var(--top);left:0;
+    bottom:var(--bot);
+    width:260px;
+    z-index:250;
+    transform:translateX(-100%);
+    box-shadow:4px 0 24px rgba(80,60,40,.18);
+    border-right:none;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Lora', serif;
-    background: var(--cream);
-    color: var(--ink);
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+  .calendar-panel.open{transform:translateX(0);}
+ 
+  /* Overlay when calendar is open */
+  .cal-overlay{display:none;position:fixed;inset:0;top:var(--top);background:rgba(50,38,28,.3);z-index:240;backdrop-filter:blur(2px);}
+  .cal-overlay.show{display:block;}
+ 
+  /* Hide desktop right toolbar */
+  .toolbar{display:none;}
+ 
+  /* Show mobile bottom nav */
+  .mobile-nav{
+    display:flex;
+    position:fixed;bottom:0;left:0;right:0;
+    height:var(--bot);
+    background:rgba(250,246,240,.97);
+    border-top:1px solid rgba(180,155,120,.22);
+    backdrop-filter:blur(12px);
+    z-index:300;
+    align-items:center;
+    justify-content:space-around;
+    padding:0 4px;
   }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(180,160,130,0.12) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(180,160,130,0.12) 1px, transparent 1px);
-    background-size: 32px 32px;
-    pointer-events: none;
-    z-index: 0;
+  .mobile-nav .tool-btn{
+    width:52px;height:52px;border-radius:16px;border:none;background:transparent;
+    flex-direction:column;gap:2px;
   }
-
-  .topbar {
-    position: relative;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-    background: rgba(250,246,240,0.92);
-    border-bottom: 1px solid rgba(180,155,120,0.25);
-    backdrop-filter: blur(8px);
-    flex-shrink: 0;
+  .mobile-nav .tool-btn:active{background:var(--cream-dark);}
+  .mobile-nav .t-icon{font-size:22px;}
+  .mobile-nav .t-label{font-size:9px;color:var(--ink-faint);}
+ 
+  /* Calendar button in topbar */
+  .mob-cal-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:32px;height:32px;border-radius:10px;
+    background:none;border:1px solid var(--cream-mid);
+    font-size:16px;cursor:pointer;flex-shrink:0;
   }
-  .topbar-logo {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    font-style: italic;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .mob-cal-btn:active{background:var(--cream-dark);}
+ 
+  /* Canvas fills available space */
+  .app-shell{
+    padding-bottom:var(--bot); /* don't go under mobile nav */
   }
-  .topbar-date { font-family: 'Caveat', cursive; font-size: 18px; color: var(--ink-light); }
-  .topbar-actions { display: flex; gap: 8px; }
-  .topbar-btn { font-family: 'Lora', serif; font-size: 12px; color: var(--ink-light); background: none; border: 1px solid var(--cream-mid); border-radius: 20px; padding: 5px 14px; cursor: pointer; transition: all 0.2s; }
-  .topbar-btn:hover { background: var(--cream-mid); color: var(--ink); }
-
-  .app-body { display: flex; flex: 1; overflow: hidden; position: relative; z-index: 1; }
-
-  .calendar-panel {
-    width: 230px;
-    flex-shrink: 0;
-    background: rgba(250,246,240,0.85);
-    border-right: 1px solid rgba(180,155,120,0.2);
-    display: flex;
-    flex-direction: column;
-    padding: 16px;
-    gap: 12px;
-    backdrop-filter: blur(6px);
-    overflow-y: auto;
+  .canvas-wrap{
+    height:calc(100dvh - var(--top) - var(--bot));
   }
-  .cal-header { display: flex; align-items: center; justify-content: space-between; }
-  .cal-month { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--ink); }
-  .cal-nav { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 6px; transition: all 0.15s; }
-  .cal-nav:hover { background: var(--cream-mid); color: var(--ink); }
-  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
-  .cal-dow { text-align: center; font-size: 10px; color: var(--ink-faint); padding: 3px 0; letter-spacing: 0.5px; text-transform: uppercase; }
-  .cal-day { text-align: center; color: var(--ink-light); padding: 5px 2px; border-radius: 50%; cursor: pointer; transition: all 0.15s; font-family: 'Caveat', cursive; font-size: 14px; position: relative; }
-  .cal-day:hover { background: var(--cream-mid); color: var(--ink); }
-  .cal-day.today { color: var(--rose); font-weight: 700; }
-  .cal-day.selected { background: var(--rose); color: white; }
-  .cal-day.has-memories::after { content: ''; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
-  .cal-day.selected::after { background: rgba(255,255,255,0.7); }
-
-  .cal-legend-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-faint); margin-bottom: 8px; }
-  .memory-list { display: flex; flex-direction: column; gap: 6px; }
-  .memory-chip { font-family: 'Caveat', cursive; font-size: 13px; color: var(--ink-light); background: var(--cream-dark); border-radius: 8px; padding: 5px 9px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
-  .memory-chip:hover { border-color: var(--cream-mid); background: white; }
-
-  .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
-  #canvas { width: 100%; height: 100%; position: relative; cursor: default; }
-
-  .toolbar { width: 68px; flex-shrink: 0; background: rgba(250,246,240,0.88); border-left: 1px solid rgba(180,155,120,0.2); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 6px; backdrop-filter: blur(6px); }
-  .tool-btn { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--cream-mid); background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: var(--ink-light); gap: 3px; }
-  .tool-btn:hover { background: var(--cream-dark); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(80,60,40,0.1); color: var(--ink); }
-  .tool-btn:active { transform: translateY(0); }
-  .tool-btn .t-icon { font-size: 18px; }
-  .tool-btn .t-label { font-size: 8px; font-family: 'Lora', serif; letter-spacing: 0.3px; }
-  .tool-sep { width: 30px; height: 1px; background: var(--cream-mid); margin: 4px 0; }
-
-  .mem-item { position: absolute; cursor: grab; user-select: none; }
-  .mem-item:active { cursor: grabbing; }
-  .mem-item .item-controls { position: absolute; top: -28px; right: 0; display: none; gap: 4px; background: rgba(58,46,36,0.85); border-radius: 8px; padding: 3px 6px; }
-  .mem-item.selected .item-controls { display: flex; }
-  .item-ctrl-btn { background: none; border: none; color: rgba(255,255,255,0.85); font-size: 12px; cursor: pointer; padding: 1px 3px; border-radius: 4px; }
-  .item-ctrl-btn:hover { color: white; background: rgba(255,255,255,0.15); }
-
-  .polaroid { background: white; padding: 10px 10px 36px 10px; box-shadow: 2px 4px 16px rgba(80,60,40,0.18), 0 1px 3px rgba(80,60,40,0.1); border-radius: 2px; position: relative; }
-  .polaroid img { display: block; width: 180px; height: 150px; object-fit: cover; border-radius: 1px; }
-  .polaroid .pol-caption { position: absolute; bottom: 6px; left: 10px; right: 10px; font-family: 'Caveat', cursive; font-size: 14px; color: var(--ink-light); text-align: center; outline: none; min-height: 20px; background: none; border: none; cursor: text; }
-  .polaroid .pol-caption:empty::before { content: 'add a caption...'; color: var(--ink-faint); font-style: italic; }
-  .polaroid::before { content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 50px; height: 20px; background: var(--tape); border-radius: 2px; }
-
-  .sticky-note { width: 160px; min-height: 120px; padding: 14px 12px 12px; border-radius: 2px; box-shadow: 3px 5px 14px rgba(80,60,40,0.15); position: relative; line-height: 1.5; color: var(--ink); }
-  .sticky-note::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.06); border-radius: 2px 2px 0 0; }
-  .note-text { outline: none; min-height: 80px; background: none; border: none; width: 100%; font-family: 'Caveat', cursive; font-size: 16px; color: inherit; cursor: text; }
-  .note-text:empty::before { content: 'write something...'; color: rgba(58,46,36,0.35); font-style: italic; pointer-events: none; }
-  .sticky-yellow { background: #fef9c3; }
-  .sticky-pink   { background: #fce7f3; }
-  .sticky-green  { background: #dcfce7; }
-  .sticky-blue   { background: #dbeafe; }
-
-  .sticker-item { cursor: grab; line-height: 1; filter: drop-shadow(1px 2px 4px rgba(80,60,40,0.2)); transition: transform 0.15s; display: inline-block; }
-  .sticker-item:hover { transform: scale(1.08); }
-
-  .music-card { background: white; border-radius: 12px; padding: 12px 14px; box-shadow: 2px 4px 14px rgba(80,60,40,0.14); display: flex; align-items: center; gap: 10px; width: 210px; border: 1px solid var(--cream-mid); }
-  .music-icon { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--mauve)); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; animation: spin 4s linear infinite paused; }
-  .music-icon.playing { animation-play-state: running; }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .music-info { flex: 1; min-width: 0; }
-  .music-title { font-family: 'Caveat', cursive; font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .music-sub { font-size: 10px; color: var(--ink-faint); font-family: 'Lora', serif; }
-  .music-play { background: none; border: 1px solid var(--cream-mid); border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; transition: all 0.15s; color: var(--rose); }
-  .music-play:hover { background: var(--rose-light); }
-
-  .location-card { background: white; border-radius: 12px; padding: 10px 14px; box-shadow: 2px 4px 14px rgba(80,60,40,0.14); display: flex; align-items: center; gap: 8px; border: 1px solid var(--cream-mid); max-width: 180px; }
-  .loc-pin { font-size: 22px; }
-  .loc-text { font-family: 'Caveat', cursive; font-size: 15px; color: var(--ink); line-height: 1.3; }
-  .loc-sub { font-size: 10px; color: var(--ink-faint); font-family: 'Lora', serif; }
-
-  .modal-bg { position: fixed; inset: 0; background: rgba(50,38,28,0.45); z-index: 999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-  .modal-bg.open { display: flex; }
-  .modal { background: var(--cream); border-radius: 18px; padding: 28px; width: 340px; box-shadow: 0 20px 60px rgba(50,38,28,0.25); position: relative; animation: modalIn 0.25s ease; }
-  @keyframes modalIn { from { opacity:0; transform:scale(0.93) translateY(10px); } to { opacity:1; transform:none; } }
-  .modal h2 { font-family:'Playfair Display',serif; font-size:20px; color:var(--ink); margin-bottom:18px; }
-  .modal-close { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:var(--ink-faint); cursor:pointer; }
-  .modal-close:hover { color:var(--ink); }
-  .modal label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.7px; color:var(--ink-faint); margin-bottom:6px; font-family:'Lora',serif; }
-  .modal input, .modal textarea { width:100%; background:white; border:1px solid var(--cream-mid); border-radius:10px; padding:10px 12px; font-family:'Lora',serif; font-size:14px; color:var(--ink); outline:none; margin-bottom:14px; transition:border-color 0.15s; }
-  .modal input:focus, .modal textarea:focus { border-color:var(--rose); }
-  .modal .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
-  .btn-primary { background:var(--rose); color:white; border:none; border-radius:10px; padding:9px 20px; font-family:'Lora',serif; font-size:13px; cursor:pointer; transition:all 0.15s; }
-  .btn-primary:hover { background:#c4736a; transform:translateY(-1px); }
-  .btn-cancel { background:none; color:var(--ink-faint); border:1px solid var(--cream-mid); border-radius:10px; padding:9px 16px; font-family:'Lora',serif; font-size:13px; cursor:pointer; }
-  .btn-cancel:hover { background:var(--cream-dark); }
-
-  .sticker-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:16px; }
-  .sticker-opt { font-size:26px; text-align:center; padding:6px; border-radius:10px; cursor:pointer; border:2px solid transparent; transition:all 0.15s; line-height:1; }
-  .sticker-opt:hover { background:var(--cream-dark); transform:scale(1.15); }
-  .sticker-opt.selected { border-color:var(--rose); background:var(--rose-light); }
-
-  .color-opts { display:flex; gap:8px; margin-bottom:14px; }
-  .color-opt { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all 0.15s; }
-  .color-opt:hover { transform:scale(1.1); }
-  .color-opt.selected { border-color:var(--ink); }
-
-  .upload-area { border:2px dashed var(--cream-mid); border-radius:12px; padding:24px; text-align:center; cursor:pointer; margin-bottom:14px; transition:all 0.15s; background:white; }
-  .upload-area:hover { border-color:var(--rose); background:var(--rose-light); }
-  .upload-area .up-icon { font-size:28px; margin-bottom:6px; }
-  .upload-area p { font-size:13px; color:var(--ink-faint); }
-  #fileInput { display:none; }
-
-  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:white; border-radius:24px; padding:10px 22px; font-family:'Caveat',cursive; font-size:16px; z-index:9999; transition:transform 0.3s ease; pointer-events:none; white-space:nowrap; }
-  .toast.show { transform:translateX(-50%) translateY(0); }
-
-  .resize-handle { position:absolute; bottom:-6px; right:-6px; width:14px; height:14px; background:white; border:2px solid var(--rose); border-radius:50%; cursor:se-resize; display:none; z-index:10; }
-  .mem-item.selected .resize-handle { display:block; }
-
-  .empty-hint { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
-  .empty-hint .eh-flower { font-size:48px; margin-bottom:12px; opacity:0.4; }
-  .empty-hint p { font-family:'Playfair Display',serif; font-style:italic; font-size:16px; color:var(--ink-faint); }
-
-  .corner-deco { position:fixed; pointer-events:none; opacity:0.18; font-size:64px; z-index:0; }
-  .corner-deco.tl { top:60px; left:8px; transform:rotate(-20deg); }
-  .corner-deco.br { bottom:8px; right:80px; transform:rotate(15deg); }
-
-  ::-webkit-scrollbar { width:5px; }
-  ::-webkit-scrollbar-thumb { background:var(--cream-mid); border-radius:3px; }
+  #canvas{width:1200px;height:800px;}
+ 
+  .corner-deco{display:none;}
+  .topbar-actions .topbar-btn:not(:first-child){display:none;}
+  .save-indicator span{display:none;}
+ 
+  .toast{bottom:calc(var(--bot) + 12px);}
+}
+ 
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE ≤ 600px
+════════════════════════════════════════════════════════════════════ */
+@media(max-width:600px){
+  :root{--top:48px;--bot:60px;}
+ 
+  .topbar-logo{font-size:16px;}
+  .topbar-date{font-size:13px;}
+  .topbar-btn{font-size:10px;padding:4px 8px;}
+ 
+  .calendar-panel{width:100%;border-radius:0;bottom:var(--bot);}
+ 
+  .mobile-nav .t-label{display:none;}
+  .mobile-nav .t-icon{font-size:24px;}
+  .mobile-nav .tool-btn{width:48px;height:48px;}
+ 
+  #canvas{width:900px;height:700px;}
+ 
+  .modal{padding:18px;border-radius:14px;}
+  .font-grid{grid-template-columns:1fr 1fr;}
+  .sticker-grid{grid-template-columns:repeat(5,1fr);}
+ 
+  .toast{font-size:14px;padding:8px 16px;}
+}
+ 
+/* ════════════════════════════════════════════════════════════════════
+   LARGE DESKTOP ≥ 1400px
+════════════════════════════════════════════════════════════════════ */
+@media(min-width:1400px){
+  .calendar-panel{width:250px;}
+  .toolbar{width:74px;}
+  #canvas{width:2000px;height:1200px;}
+}
 </style>
 </head>
 <body>
-
+ 
 <span class="corner-deco tl">🌸</span>
 <span class="corner-deco br">🌿</span>
-
+<div class="cal-overlay" id="calOverlay" onclick="closeCalendar()"></div>
+ 
+<!-- TOP BAR -->
 <div class="topbar">
+  <button class="mob-cal-btn" onclick="toggleCalendar()" title="Takvim">📅</button>
   <div class="topbar-logo">🌸 Pekzya Diary</div>
-  <div class="topbar-date" id="topbarDate"></div>
+  <div class="topbar-center">
+    <div class="topbar-date" id="topbarDate"></div>
+    <div class="save-indicator" id="saveIndicator">
+      <div class="save-dot"></div>
+      <span id="saveText">Kaydedildi</span>
+    </div>
+  </div>
   <div class="topbar-actions">
     <button class="topbar-btn" onclick="undoLast()">↩ Undo</button>
-    <button class="topbar-btn" onclick="clearCanvas()">✕ Clear day</button>
+    <button class="topbar-btn" onclick="clearCanvas()">✕ Temizle</button>
   </div>
 </div>
-
-<div class="app-body">
-  <div class="calendar-panel">
+ 
+<!-- MAIN SHELL -->
+<div class="app-shell">
+ 
+  <!-- CALENDAR -->
+  <div class="calendar-panel" id="calPanel">
     <div class="cal-header">
       <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
       <div class="cal-month" id="calMonth"></div>
       <button class="cal-nav" onclick="changeMonth(1)">›</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-legend">
+    <div>
       <div class="cal-legend-title">Memories</div>
       <div class="memory-list" id="memoryList"></div>
     </div>
   </div>
-
+ 
+  <!-- CANVAS -->
   <div class="canvas-wrap">
     <div id="canvas">
       <div class="empty-hint" id="emptyHint">
         <div class="eh-flower">🌻</div>
-        <p>Start adding memories with the toolbar →</p>
+        <p>Toolbar'dan anı ekle →</p>
       </div>
     </div>
   </div>
-
+ 
+  <!-- DESKTOP TOOLBAR -->
   <div class="toolbar">
-    <button class="tool-btn" onclick="openModal('photoModal')">
-      <span class="t-icon">📷</span><span class="t-label">Photo</span>
-    </button>
-    <button class="tool-btn" onclick="openModal('noteModal')">
-      <span class="t-icon">📝</span><span class="t-label">Note</span>
-    </button>
-    <button class="tool-btn" onclick="openModal('stickerModal')">
-      <span class="t-icon">✨</span><span class="t-label">Sticker</span>
-    </button>
+    <button class="tool-btn" onclick="openModal('photoModal')"><span class="t-icon">📷</span><span class="t-label">Photo</span></button>
+    <button class="tool-btn" onclick="openModal('noteModal')"><span class="t-icon">📝</span><span class="t-label">Note</span></button>
+    <button class="tool-btn" onclick="openModal('stickerModal')"><span class="t-icon">✨</span><span class="t-label">Sticker</span></button>
     <div class="tool-sep"></div>
-    <button class="tool-btn" onclick="openModal('musicModal')">
-      <span class="t-icon">🎵</span><span class="t-label">Music</span>
-    </button>
-    <button class="tool-btn" onclick="openModal('locationModal')">
-      <span class="t-icon">📍</span><span class="t-label">Location</span>
-    </button>
+    <button class="tool-btn" onclick="openModal('musicModal')"><span class="t-icon">🎵</span><span class="t-label">Music</span></button>
+    <button class="tool-btn" onclick="openModal('locationModal')"><span class="t-icon">📍</span><span class="t-label">Location</span></button>
   </div>
-</div>
-
-<!-- Photo Modal -->
+ 
+</div><!-- /app-shell -->
+ 
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav">
+  <button class="tool-btn" onclick="openModal('photoModal')"><span class="t-icon">📷</span><span class="t-label">Photo</span></button>
+  <button class="tool-btn" onclick="openModal('noteModal')"><span class="t-icon">📝</span><span class="t-label">Note</span></button>
+  <button class="tool-btn" onclick="openModal('stickerModal')"><span class="t-icon">✨</span><span class="t-label">Sticker</span></button>
+  <button class="tool-btn" onclick="openModal('musicModal')"><span class="t-icon">🎵</span><span class="t-label">Music</span></button>
+  <button class="tool-btn" onclick="openModal('locationModal')"><span class="t-icon">📍</span><span class="t-label">Location</span></button>
+</nav>
+ 
+<!-- ══ MODALS ══════════════════════════════════════════════════════════ -->
+ 
+<!-- Photo -->
 <div class="modal-bg" id="photoModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('photoModal')">×</button>
-    <h2>📷 Add a Photo</h2>
+    <h2>📷 Fotoğraf Ekle</h2>
     <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-      <div class="up-icon">🖼</div>
-      <p>Click to upload a photo</p>
-      <p style="font-size:11px;margin-top:4px;">JPG, PNG, GIF, WebP</p>
+      <div class="up-icon">🖼</div><p>Fotoğraf yükle</p><p style="font-size:11px;margin-top:3px;">JPG · PNG · GIF · WebP</p>
     </div>
     <input type="file" id="fileInput" accept="image/*" onchange="handlePhotoUpload(event)">
-    <label>Caption (optional)</label>
-    <input type="text" id="photoCaption" placeholder="a sweet memory...">
+    <label>Açıklama (opsiyonel)</label>
+    <input type="text" id="photoCaption" placeholder="tatlı bir an...">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('photoModal')">Cancel</button>
-      <button class="btn-primary" onclick="addPhoto()">Add to diary ✦</button>
+      <button class="btn-cancel" onclick="closeModal('photoModal')">İptal</button>
+      <button class="btn-primary" onclick="addPhoto()">Ekle ✦</button>
     </div>
   </div>
 </div>
-
-<!-- Note Modal -->
+ 
+<!-- Note -->
 <div class="modal-bg" id="noteModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('noteModal')">×</button>
-    <h2>📝 Add a Note</h2>
-    <label>Note color</label>
+    <h2>📝 Not Ekle</h2>
+    <label>Renk</label>
     <div class="color-opts">
       <div class="color-opt selected" style="background:#fef9c3;" data-color="sticky-yellow" onclick="selectColor(this)"></div>
       <div class="color-opt" style="background:#fce7f3;" data-color="sticky-pink" onclick="selectColor(this)"></div>
       <div class="color-opt" style="background:#dcfce7;" data-color="sticky-green" onclick="selectColor(this)"></div>
       <div class="color-opt" style="background:#dbeafe;" data-color="sticky-blue" onclick="selectColor(this)"></div>
     </div>
-    <label>Write your note</label>
-    <textarea id="noteText" rows="4" placeholder="Dear diary..."></textarea>
+    <label>Font</label>
+    <div class="font-grid" id="fontGrid"></div>
+    <label>Genişlik</label>
+    <div class="slider-row">
+      <input type="range" min="120" max="380" value="160" id="noteWidthSlider" oninput="document.getElementById('noteWidthVal').textContent=this.value+'px'">
+      <span class="slider-val" id="noteWidthVal">160px</span>
+    </div>
+    <label>Yükseklik</label>
+    <div class="slider-row">
+      <input type="range" min="80" max="380" value="120" id="noteHeightSlider" oninput="document.getElementById('noteHeightVal').textContent=this.value+'px'">
+      <span class="slider-val" id="noteHeightVal">120px</span>
+    </div>
+    <label>Not</label>
+    <textarea id="noteText" rows="3" placeholder="Dear diary..."></textarea>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('noteModal')">Cancel</button>
-      <button class="btn-primary" onclick="addNote()">Add to diary ✦</button>
+      <button class="btn-cancel" onclick="closeModal('noteModal')">İptal</button>
+      <button class="btn-primary" onclick="addNote()">Ekle ✦</button>
     </div>
   </div>
 </div>
-
-<!-- Sticker Modal -->
+ 
+<!-- Sticker -->
 <div class="modal-bg" id="stickerModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('stickerModal')">×</button>
-    <h2>✨ Choose a Sticker</h2>
+    <h2>✨ Sticker Seç</h2>
     <div class="sticker-grid" id="stickerGrid"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('stickerModal')">Cancel</button>
-      <button class="btn-primary" onclick="addSticker()">Add to diary ✦</button>
+      <button class="btn-cancel" onclick="closeModal('stickerModal')">İptal</button>
+      <button class="btn-primary" onclick="addSticker()">Ekle ✦</button>
     </div>
   </div>
 </div>
-
-<!-- Music Modal -->
+ 
+<!-- Music -->
 <div class="modal-bg" id="musicModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('musicModal')">×</button>
-    <h2>🎵 Attach Music</h2>
-    <label>Song title</label>
-    <input type="text" id="musicTitle" placeholder="e.g. Golden Hour">
-    <label>Artist</label>
-    <input type="text" id="musicArtist" placeholder="e.g. JVKE">
+    <h2>🎵 Müzik Ekle</h2>
+    <label>Şarkı adı</label>
+    <input type="text" id="musicTitle" placeholder="Golden Hour">
+    <label>Sanatçı</label>
+    <input type="text" id="musicArtist" placeholder="JVKE">
     <label>Link (Spotify / YouTube)</label>
     <input type="text" id="musicLink" placeholder="https://...">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('musicModal')">Cancel</button>
-      <button class="btn-primary" onclick="addMusic()">Add to diary ✦</button>
+      <button class="btn-cancel" onclick="closeModal('musicModal')">İptal</button>
+      <button class="btn-primary" onclick="addMusic()">Ekle ✦</button>
     </div>
   </div>
 </div>
-
-<!-- Location Modal -->
+ 
+<!-- Location -->
 <div class="modal-bg" id="locationModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('locationModal')">×</button>
-    <h2>📍 Add Location</h2>
-    <label>Place name</label>
-    <input type="text" id="locName" placeholder="e.g. Paris, France">
-    <label>Note (optional)</label>
-    <input type="text" id="locNote" placeholder="e.g. at sunset...">
+    <h2>📍 Konum Ekle</h2>
+    <label>Yer adı</label>
+    <input type="text" id="locName" placeholder="Paris, Fransa">
+    <label>Not (opsiyonel)</label>
+    <input type="text" id="locNote" placeholder="gün batımında...">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('locationModal')">Cancel</button>
-      <button class="btn-primary" onclick="addLocation()">Add to diary ✦</button>
+      <button class="btn-cancel" onclick="closeModal('locationModal')">İptal</button>
+      <button class="btn-primary" onclick="addLocation()">Ekle ✦</button>
     </div>
   </div>
 </div>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script>
-const state = {
-  memories: {}, selectedDate: null, currentMonth: new Date(),
-  selectedSticker: null, selectedColor: 'sticky-yellow',
-  pendingPhotoData: null, history: [], zCounter: 10,
-};
-
+/* ─── CONSTANTS ─────────────────────────────────────────────────────── */
+const FONTS = [
+  {id:'caveat',    label:'Caveat',             family:"'Caveat',cursive"},
+  {id:'dancing',   label:'Dancing Script',      family:"'Dancing Script',cursive"},
+  {id:'lora',      label:'Lora',                family:"'Lora',serif"},
+  {id:'patrick',   label:'Patrick Hand',        family:"'Patrick Hand',cursive"},
+  {id:'architect', label:'Architects Daughter', family:"'Architects Daughter',cursive"},
+  {id:'indie',     label:'Indie Flower',        family:"'Indie Flower',cursive"},
+  {id:'shadows',   label:'Shadows Into Light',  family:"'Shadows Into Light',cursive"},
+  {id:'playfair',  label:'Playfair Display',    family:"'Playfair Display',serif"},
+];
 const STICKERS = [
   '🌸','🌺','🌻','🌷','🌹','💐','🍃','🌿','🍀','🌱','🪴','🍁',
   '⭐','✨','💫','🌟','⚡','🔥','💕','💖','💗','💛','🧡','💜',
@@ -363,279 +571,385 @@ const STICKERS = [
   '☀️','🌈','🌙','⛅','🌊','🏔','🍓','🍑','🍋','🍇','🍦','🧁',
   '📌','🖊','📎','🔖','📚','🗝','🎶','🎸','🎹','🎨','🖌','🎭',
 ];
-
-window.addEventListener('load', () => {
-  state.selectedDate = todayKey();
-  loadFromStorage();
+ 
+/* ─── STATE ─────────────────────────────────────────────────────────── */
+const S = {
+  memories:{}, selectedDate:null, currentMonth:new Date(),
+  selectedSticker:null, selectedColor:'sticky-yellow', selectedFont:'caveat',
+  pendingPhoto:null, history:[], z:10,
+};
+let saveTimer = null;
+ 
+/* ─── INIT ──────────────────────────────────────────────────────────── */
+window.addEventListener('load',()=>{
+  S.selectedDate = todayKey();
+  loadStorage();
   renderCalendar();
-  populateStickerGrid();
-  updateTopbarDate();
+  buildFontGrid();
+  buildStickerGrid();
+  updateDate();
   renderCanvas();
-  enableCanvasDrag();
+  showSaved();
 });
-
-function todayKey() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function pad(n) { return String(n).padStart(2,'0'); }
-function dateKey(y,m,d) { return `${y}-${pad(m)}-${pad(d)}`; }
-
-function saveToStorage() { try { localStorage.setItem('petalDiary', JSON.stringify(state.memories)); } catch(e){} }
-function loadFromStorage() { try { const r=localStorage.getItem('petalDiary'); if(r) state.memories=JSON.parse(r); } catch(e){} }
-
-function renderCalendar() {
-  const y=state.currentMonth.getFullYear(), m=state.currentMonth.getMonth();
+ 
+/* ─── HELPERS ───────────────────────────────────────────────────────── */
+const pad = n => String(n).padStart(2,'0');
+const todayKey = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const dateKey = (y,m,d) => `${y}-${pad(m)}-${pad(d)}`;
+const randX = () => Math.floor(Math.random()*Math.max(200,document.getElementById('canvas').offsetWidth-280))+60;
+const randY = () => Math.floor(Math.random()*Math.max(100,document.getElementById('canvas').offsetHeight-220))+60;
+const randRot = () => (Math.random()-.5)*8;
+const fontFamily = id => (FONTS.find(f=>f.id===id)||FONTS[0]).family;
+ 
+/* ─── SAVE / LOAD ───────────────────────────────────────────────────── */
+function saveStorage(){
+  showSaving();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem('pekzyaDiary', JSON.stringify(S.memories)); }catch(e){}
+    showSaved();
+  }, 400);
+}
+function loadStorage(){
+  try{ const r=localStorage.getItem('pekzyaDiary'); if(r) S.memories=JSON.parse(r); }catch(e){}
+}
+ 
+/* ─── SAVE INDICATOR ────────────────────────────────────────────────── */
+function showSaving(){
+  const el=document.getElementById('saveIndicator');
+  el.className='save-indicator saving';
+  document.getElementById('saveText').textContent='Kaydediliyor...';
+}
+function showSaved(){
+  const el=document.getElementById('saveIndicator');
+  el.className='save-indicator saved';
+  document.getElementById('saveText').textContent='Kaydedildi ✓';
+  setTimeout(()=>{ el.className='save-indicator'; document.getElementById('saveText').textContent='Kaydedildi'; },2000);
+}
+ 
+/* ─── CALENDAR ──────────────────────────────────────────────────────── */
+function renderCalendar(){
+  const y=S.currentMonth.getFullYear(), m=S.currentMonth.getMonth();
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('calMonth').textContent=`${months[m]} ${y}`;
-  const firstDay=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), today=todayKey();
-  let html=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<firstDay;i++) html+='<div></div>';
+  const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), today=todayKey();
+  let h=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++) h+='<div></div>';
   for(let d=1;d<=days;d++){
     const k=dateKey(y,m+1,d);
-    let cls='cal-day';
-    if(k===today) cls+=' today';
-    if(k===state.selectedDate) cls+=' selected';
-    if(state.memories[k]&&state.memories[k].length) cls+=' has-memories';
-    html+=`<div class="${cls}" onclick="selectDay('${k}')">${d}</div>`;
+    let c='cal-day';
+    if(k===today) c+=' today';
+    if(k===S.selectedDate) c+=' selected';
+    if(S.memories[k]?.length) c+=' has-memories';
+    h+=`<div class="${c}" onclick="selectDay('${k}')">${d}</div>`;
   }
-  document.getElementById('calGrid').innerHTML=html;
+  document.getElementById('calGrid').innerHTML=h;
   renderMemoryList();
 }
-
-function changeMonth(dir) { state.currentMonth.setMonth(state.currentMonth.getMonth()+dir); renderCalendar(); }
-
-function selectDay(key) { state.selectedDate=key; renderCalendar(); updateTopbarDate(); renderCanvas(); }
-
-function updateTopbarDate() {
-  const [y,m,d]=state.selectedDate.split('-').map(Number);
-  document.getElementById('topbarDate').textContent=new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+function changeMonth(d){ S.currentMonth.setMonth(S.currentMonth.getMonth()+d); renderCalendar(); }
+function selectDay(k){
+  S.selectedDate=k; renderCalendar(); updateDate(); renderCanvas();
+  closeCalendar(); // auto-close on mobile after picking a day
 }
-
-function renderMemoryList() {
-  const items=state.memories[state.selectedDate]||[], el=document.getElementById('memoryList');
-  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--ink-faint);font-family:\'Lora\',serif;">No memories yet for this day.</div>'; return; }
-  const icons={photo:'📷',note:'📝',sticker:'✨',music:'🎵',location:'📍'};
+function updateDate(){
+  const [y,m,d]=S.selectedDate.split('-').map(Number);
+  document.getElementById('topbarDate').textContent=new Date(y,m-1,d).toLocaleDateString('tr-TR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+function renderMemoryList(){
+  const items=S.memories[S.selectedDate]||[], el=document.getElementById('memoryList');
+  if(!items.length){ el.innerHTML='<div style="font-size:11px;color:var(--ink-faint);font-family:\'Lora\',serif;padding:4px 0;">Henüz anı yok.</div>'; return; }
+  const ic={photo:'📷',note:'📝',sticker:'✨',music:'🎵',location:'📍'};
   el.innerHTML=items.map((item,i)=>{
-    const lbl=item.type==='photo'?(item.caption||'Photo'):item.type==='note'?(item.text||'Note').slice(0,20):item.type==='sticker'?item.emoji:item.type==='music'?item.title:item.location;
-    return `<div class="memory-chip" onclick="focusItem(${i})"><span>${icons[item.type]||'•'}</span>${lbl}</div>`;
+    const l=item.type==='photo'?(item.caption||'Fotoğraf'):item.type==='note'?(item.text||'Not').slice(0,22):item.type==='sticker'?item.emoji:item.type==='music'?item.title:item.location;
+    return `<div class="memory-chip" onclick="focusItem(${i})">${ic[item.type]||'•'} ${l}</div>`;
   }).join('');
 }
-
-function populateStickerGrid() {
+ 
+/* ─── CALENDAR TOGGLE (mobile) ──────────────────────────────────────── */
+function toggleCalendar(){
+  const p=document.getElementById('calPanel'), o=document.getElementById('calOverlay');
+  const open=p.classList.toggle('open');
+  o.classList.toggle('show', open);
+}
+function closeCalendar(){
+  document.getElementById('calPanel').classList.remove('open');
+  document.getElementById('calOverlay').classList.remove('show');
+}
+ 
+/* ─── FONT & STICKER GRIDS ──────────────────────────────────────────── */
+function buildFontGrid(){
+  document.getElementById('fontGrid').innerHTML=FONTS.map(f=>`
+    <div class="font-opt${f.id===S.selectedFont?' selected':''}" data-font="${f.id}" onclick="pickFont(this,'${f.id}')">
+      <div style="font-family:${f.family};font-size:16px;">Merhaba 🌸</div>
+      <div class="font-name">${f.label}</div>
+    </div>`).join('');
+}
+function pickFont(el,id){
+  document.querySelectorAll('.font-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); S.selectedFont=id;
+}
+function buildStickerGrid(){
   document.getElementById('stickerGrid').innerHTML=STICKERS.map(s=>`<div class="sticker-opt" onclick="pickSticker(this,'${s}')">${s}</div>`).join('');
 }
-function pickSticker(el,emoji) {
-  document.querySelectorAll('.sticker-opt').forEach(e=>e.classList.remove('selected'));
-  el.classList.add('selected'); state.selectedSticker=emoji;
+function pickSticker(el,e){
+  document.querySelectorAll('.sticker-opt').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected'); S.selectedSticker=e;
 }
-
-function openModal(id) {
+ 
+/* ─── MODAL ─────────────────────────────────────────────────────────── */
+function openModal(id){
   document.getElementById(id).classList.add('open');
-  if(id==='photoModal'){ state.pendingPhotoData=null; document.getElementById('photoCaption').value=''; document.getElementById('uploadArea').innerHTML='<div class="up-icon">🖼</div><p>Click to upload a photo</p><p style="font-size:11px;margin-top:4px;">JPG, PNG, GIF, WebP</p>'; }
-  if(id==='noteModal') document.getElementById('noteText').value='';
-  if(id==='stickerModal'){ state.selectedSticker=null; document.querySelectorAll('.sticker-opt').forEach(e=>e.classList.remove('selected')); }
+  if(id==='photoModal'){ S.pendingPhoto=null; document.getElementById('photoCaption').value=''; resetUploadArea(); }
+  if(id==='noteModal'){ document.getElementById('noteText').value=''; document.getElementById('noteWidthSlider').value=160; document.getElementById('noteWidthVal').textContent='160px'; document.getElementById('noteHeightSlider').value=120; document.getElementById('noteHeightVal').textContent='120px'; buildFontGrid(); }
+  if(id==='stickerModal'){ S.selectedSticker=null; document.querySelectorAll('.sticker-opt').forEach(e=>e.classList.remove('selected')); }
   if(id==='musicModal'){ ['musicTitle','musicArtist','musicLink'].forEach(i=>document.getElementById(i).value=''); }
   if(id==='locationModal'){ ['locName','locNote'].forEach(i=>document.getElementById(i).value=''); }
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) bg.classList.remove('open'); }));
-
-function selectColor(el) {
+ 
+function selectColor(el){
   document.querySelectorAll('.color-opt').forEach(e=>e.classList.remove('selected'));
-  el.classList.add('selected'); state.selectedColor=el.dataset.color;
+  el.classList.add('selected'); S.selectedColor=el.dataset.color;
 }
-
-function handlePhotoUpload(e) {
+ 
+/* ─── ADD ITEMS ─────────────────────────────────────────────────────── */
+function resetUploadArea(){
+  document.getElementById('uploadArea').innerHTML='<div class="up-icon">🖼</div><p>Fotoğraf yükle</p><p style="font-size:11px;margin-top:3px;">JPG · PNG · GIF · WebP</p>';
+}
+function handlePhotoUpload(e){
   const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{ state.pendingPhotoData=ev.target.result; document.getElementById('uploadArea').innerHTML=`<img src="${ev.target.result}" style="max-height:100px;border-radius:8px;margin:auto;display:block;"><p style="margin-top:6px;font-size:11px;">Photo ready! ✓</p>`; };
-  reader.readAsDataURL(file);
+  const r=new FileReader();
+  r.onload=ev=>{ S.pendingPhoto=ev.target.result; document.getElementById('uploadArea').innerHTML=`<img src="${ev.target.result}" style="max-height:90px;border-radius:8px;margin:auto;display:block;"><p style="margin-top:5px;font-size:11px;">Hazır ✓</p>`; };
+  r.readAsDataURL(file);
 }
-
-function addPhoto() {
-  if(!state.pendingPhotoData){ showToast('Please upload a photo first 🌸'); return; }
-  pushMemory({ type:'photo', src:state.pendingPhotoData, caption:document.getElementById('photoCaption').value, x:randX(), y:randY(), rotation:randRot(), z:++state.zCounter });
+function addPhoto(){
+  if(!S.pendingPhoto){ showToast('Önce fotoğraf yükle 🌸'); return; }
+  push({type:'photo',src:S.pendingPhoto,caption:document.getElementById('photoCaption').value,x:randX(),y:randY(),rotation:randRot(),z:++S.z});
   closeModal('photoModal'); document.getElementById('fileInput').value='';
-  showToast('Photo added! 📷');
+  showToast('Fotoğraf eklendi 📷');
 }
-
-function addNote() {
+function addNote(){
   const text=document.getElementById('noteText').value.trim();
-  if(!text){ showToast('Write something first ✏️'); return; }
-  pushMemory({ type:'note', text, color:state.selectedColor, x:randX(), y:randY(), z:++state.zCounter });
-  closeModal('noteModal'); showToast('Note added! 📝');
+  if(!text){ showToast('Bir şeyler yaz ✏️'); return; }
+  const w=+document.getElementById('noteWidthSlider').value;
+  const h=+document.getElementById('noteHeightSlider').value;
+  push({type:'note',text,color:S.selectedColor,font:S.selectedFont,noteW:w,noteH:h,x:randX(),y:randY(),z:++S.z});
+  closeModal('noteModal'); showToast('Not eklendi 📝');
 }
-
-function addSticker() {
-  if(!state.selectedSticker){ showToast('Pick a sticker first ✨'); return; }
-  pushMemory({ type:'sticker', emoji:state.selectedSticker, x:randX(), y:randY(), size:48, rotation:randRot()*0.5, z:++state.zCounter });
-  closeModal('stickerModal'); showToast('Sticker added! ✨');
+function addSticker(){
+  if(!S.selectedSticker){ showToast('Bir sticker seç ✨'); return; }
+  push({type:'sticker',emoji:S.selectedSticker,x:randX(),y:randY(),size:48,rotation:randRot()*.5,z:++S.z});
+  closeModal('stickerModal'); showToast('Sticker eklendi ✨');
 }
-
-function addMusic() {
+function addMusic(){
   const title=document.getElementById('musicTitle').value.trim();
-  if(!title){ showToast('Add a song title 🎵'); return; }
-  pushMemory({ type:'music', title, artist:document.getElementById('musicArtist').value, link:document.getElementById('musicLink').value.trim(), x:randX(), y:randY(), z:++state.zCounter, playing:false });
-  closeModal('musicModal'); showToast('Music attached! 🎵');
+  if(!title){ showToast('Şarkı adı gir 🎵'); return; }
+  push({type:'music',title,artist:document.getElementById('musicArtist').value,link:document.getElementById('musicLink').value.trim(),x:randX(),y:randY(),z:++S.z,playing:false});
+  closeModal('musicModal'); showToast('Müzik eklendi 🎵');
 }
-
-function addLocation() {
+function addLocation(){
   const loc=document.getElementById('locName').value.trim();
-  if(!loc){ showToast('Enter a place name 📍'); return; }
-  pushMemory({ type:'location', location:loc, note:document.getElementById('locNote').value, x:randX(), y:randY(), z:++state.zCounter });
-  closeModal('locationModal'); showToast('Location added! 📍');
+  if(!loc){ showToast('Yer adı gir 📍'); return; }
+  push({type:'location',location:loc,note:document.getElementById('locNote').value,x:randX(),y:randY(),z:++S.z});
+  closeModal('locationModal'); showToast('Konum eklendi 📍');
 }
-
-function pushMemory(item) {
-  if(!state.memories[state.selectedDate]) state.memories[state.selectedDate]=[];
-  state.memories[state.selectedDate].push(item);
-  state.history.push({ date:state.selectedDate, index:state.memories[state.selectedDate].length-1 });
-  saveToStorage(); renderCanvas(); renderCalendar();
+ 
+/* ─── PUSH & RENDER ─────────────────────────────────────────────────── */
+function push(item){
+  if(!S.memories[S.selectedDate]) S.memories[S.selectedDate]=[];
+  S.memories[S.selectedDate].push(item);
+  S.history.push({date:S.selectedDate,index:S.memories[S.selectedDate].length-1});
+  saveStorage(); renderCanvas(); renderCalendar();
 }
-
-function renderCanvas() {
-  const canvas=document.getElementById('canvas');
-  canvas.querySelectorAll('.mem-item').forEach(e=>e.remove());
-  const items=state.memories[state.selectedDate]||[];
+function renderCanvas(){
+  const cv=document.getElementById('canvas');
+  cv.querySelectorAll('.mem-item').forEach(e=>e.remove());
+  const items=S.memories[S.selectedDate]||[];
   document.getElementById('emptyHint').style.display=items.length?'none':'block';
-  items.forEach((item,idx)=>{ const el=createItemEl(item,idx); canvas.appendChild(el); makeDraggable(el,idx); });
+  items.forEach((item,idx)=>{ const el=makeEl(item,idx); cv.appendChild(el); makeDraggable(el,idx); });
 }
-
-function createItemEl(item,idx) {
+function makeEl(item,idx){
   const wrap=document.createElement('div');
   wrap.className='mem-item'; wrap.dataset.idx=idx;
-  wrap.style.left=item.x+'px'; wrap.style.top=item.y+'px';
-  wrap.style.zIndex=item.z||10;
-  wrap.style.transform=`rotate(${item.rotation||0}deg)`;
-
+  wrap.style.cssText=`left:${item.x}px;top:${item.y}px;z-index:${item.z||10};transform:rotate(${item.rotation||0}deg);`;
+ 
   const ctrl=document.createElement('div'); ctrl.className='item-controls';
   ctrl.innerHTML=`<button class="item-ctrl-btn" onclick="rotateItem(${idx},-5)">↺</button><button class="item-ctrl-btn" onclick="rotateItem(${idx},5)">↻</button><button class="item-ctrl-btn" onclick="deleteItem(${idx})">✕</button>`;
   wrap.appendChild(ctrl);
-
+ 
   if(item.type==='photo'){
     const pol=document.createElement('div'); pol.className='polaroid';
-    pol.innerHTML=`<img src="${item.src}" alt="memory"><div class="pol-caption" contenteditable="true" onblur="updateCaption(${idx},this)">${item.caption||''}</div>`;
+    pol.innerHTML=`<img src="${item.src}" alt=""><div class="pol-caption" contenteditable="true" onblur="saveCaption(${idx},this)">${item.caption||''}</div>`;
     if(item.width) pol.querySelector('img').style.cssText=`width:${item.width}px;height:${item.width*150/180}px;`;
     wrap.appendChild(pol);
-    const rh=document.createElement('div'); rh.className='resize-handle'; wrap.appendChild(rh); makeResizable(wrap,rh,idx);
-  } else if(item.type==='note'){
-    const note=document.createElement('div'); note.className=`sticky-note ${item.color}`;
-    const ta=document.createElement('div'); ta.className='note-text'; ta.contentEditable='true'; ta.textContent=item.text;
-    ta.addEventListener('blur',()=>updateNoteText(idx,ta));
-    note.appendChild(ta); wrap.appendChild(note);
-  } else if(item.type==='sticker'){
-    const s=document.createElement('span'); s.className='sticker-item'; s.textContent=item.emoji; s.style.fontSize=(item.size||48)+'px';
+    const rh=mkRH(); wrap.appendChild(rh); makePhotoResizable(wrap,rh,idx);
+  }
+  else if(item.type==='note'){
+    const note=document.createElement('div');
+    note.className=`sticky-note ${item.color}`;
+    note.style.cssText=`width:${item.noteW||160}px;height:${item.noteH||120}px;min-height:${item.noteH||120}px;`;
+    const ta=document.createElement('div');
+    ta.className='note-text'; ta.contentEditable='true'; ta.textContent=item.text;
+    ta.style.fontFamily=fontFamily(item.font||'caveat'); ta.style.fontSize='16px';
+    ta.addEventListener('blur',()=>saveNoteText(idx,ta));
+    note.appendChild(ta);
+    const nrh=document.createElement('div'); nrh.className='note-resize-handle';
+    note.appendChild(nrh); wrap.appendChild(note);
+    makeNoteResizable(wrap,nrh,idx);
+  }
+  else if(item.type==='sticker'){
+    const s=document.createElement('span');
+    s.className='sticker-item'; s.textContent=item.emoji; s.style.fontSize=(item.size||48)+'px';
     wrap.appendChild(s);
-    const rh=document.createElement('div'); rh.className='resize-handle'; wrap.appendChild(rh); makeStickerResizable(wrap,rh,idx);
-  } else if(item.type==='music'){
+    const rh=mkRH(); wrap.appendChild(rh); makeStickerResizable(wrap,rh,idx);
+  }
+  else if(item.type==='music'){
     const mc=document.createElement('div'); mc.className='music-card';
     mc.innerHTML=`<div class="music-icon${item.playing?' playing':''}" id="micon${idx}">🎵</div><div class="music-info"><div class="music-title">${item.title}</div><div class="music-sub">${item.artist||'Unknown artist'}</div></div><button class="music-play" onclick="toggleMusic(${idx},this)">▶</button>`;
     wrap.appendChild(mc);
-  } else if(item.type==='location'){
+  }
+  else if(item.type==='location'){
     const lc=document.createElement('div'); lc.className='location-card';
     lc.innerHTML=`<div class="loc-pin">📍</div><div><div class="loc-text">${item.location}</div>${item.note?`<div class="loc-sub">${item.note}</div>`:''}</div>`;
     wrap.appendChild(lc);
   }
-
-  wrap.addEventListener('mousedown',e=>{ if(!e.target.closest('.item-ctrl-btn')&&!e.target.closest('.resize-handle')&&!e.target.closest('[contenteditable]')&&!e.target.closest('.music-play')) selectItem(wrap); });
+ 
+  wrap.addEventListener('mousedown',e=>{
+    if(!e.target.closest('.item-ctrl-btn')&&!e.target.closest('.resize-handle')&&!e.target.closest('.note-resize-handle')&&!e.target.closest('[contenteditable]')&&!e.target.closest('.music-play')) selectItem(wrap);
+  });
+  wrap.addEventListener('touchstart',e=>{
+    if(!e.target.closest('.item-ctrl-btn')&&!e.target.closest('.resize-handle')&&!e.target.closest('.note-resize-handle')&&!e.target.closest('[contenteditable]')&&!e.target.closest('.music-play')) selectItem(wrap);
+  },{passive:true});
   return wrap;
 }
-
-function selectItem(el) {
+const mkRH=()=>{ const r=document.createElement('div'); r.className='resize-handle'; return r; };
+ 
+/* ─── ITEM ACTIONS ──────────────────────────────────────────────────── */
+function selectItem(el){
   document.querySelectorAll('.mem-item').forEach(e=>e.classList.remove('selected'));
   el.classList.add('selected');
-  const idx=parseInt(el.dataset.idx), items=state.memories[state.selectedDate]||[];
-  items[idx].z=++state.zCounter; el.style.zIndex=state.zCounter; saveToStorage();
+  const idx=+el.dataset.idx, items=S.memories[S.selectedDate]||[];
+  if(items[idx]){ items[idx].z=++S.z; el.style.zIndex=S.z; saveStorage(); }
 }
-
-function deleteItem(idx) {
-  (state.memories[state.selectedDate]||[]).splice(idx,1);
-  saveToStorage(); renderCanvas(); renderCalendar(); showToast('Removed ✕');
+function deleteItem(idx){
+  (S.memories[S.selectedDate]||[]).splice(idx,1);
+  saveStorage(); renderCanvas(); renderCalendar(); showToast('Silindi ✕');
 }
-
-function rotateItem(idx,deg) {
-  const items=state.memories[state.selectedDate]||[];
+function rotateItem(idx,deg){
+  const items=S.memories[S.selectedDate]||[];
+  if(!items[idx]) return;
   items[idx].rotation=(items[idx].rotation||0)+deg;
   const el=document.querySelector(`.mem-item[data-idx="${idx}"]`);
   if(el) el.style.transform=`rotate(${items[idx].rotation}deg)`;
-  saveToStorage();
+  saveStorage();
 }
-
-function updateCaption(idx,el) { const items=state.memories[state.selectedDate]||[]; if(items[idx]){items[idx].caption=el.textContent;saveToStorage();} }
-function updateNoteText(idx,el) { const items=state.memories[state.selectedDate]||[]; if(items[idx]){items[idx].text=el.textContent;saveToStorage();} }
-
-function toggleMusic(idx,btn) {
-  const items=state.memories[state.selectedDate]||[], item=items[idx]; if(!item) return;
+function saveCaption(idx,el){ const items=S.memories[S.selectedDate]||[]; if(items[idx]){items[idx].caption=el.textContent;saveStorage();} }
+function saveNoteText(idx,el){ const items=S.memories[S.selectedDate]||[]; if(items[idx]){items[idx].text=el.textContent;saveStorage();} }
+function toggleMusic(idx,btn){
+  const items=S.memories[S.selectedDate]||[], item=items[idx]; if(!item) return;
   item.playing=!item.playing;
   btn.textContent=item.playing?'⏸':'▶';
-  const icon=document.getElementById('micon'+idx);
-  if(icon) icon.classList.toggle('playing',item.playing);
+  const ic=document.getElementById('micon'+idx); if(ic) ic.classList.toggle('playing',item.playing);
   if(item.link&&item.playing) window.open(item.link,'_blank');
-  saveToStorage();
+  saveStorage();
 }
-
-function focusItem(idx) { const el=document.querySelector(`.mem-item[data-idx="${idx}"]`); if(el) selectItem(el); }
-
-function makeDraggable(el,idx) {
-  let sx,sy,ox,oy,dragging=false;
-  el.addEventListener('mousedown',e=>{
-    if(e.target.closest('.item-ctrl-btn')||e.target.closest('.resize-handle')||e.target.closest('[contenteditable]')||e.target.closest('.music-play')) return;
-    dragging=true; sx=e.clientX; sy=e.clientY;
+function focusItem(idx){ const el=document.querySelector(`.mem-item[data-idx="${idx}"]`); if(el) selectItem(el); }
+ 
+/* ─── DRAG (mouse + touch) ──────────────────────────────────────────── */
+function makeDraggable(el,idx){
+  let ox,oy,sx,sy,dragging=false;
+ 
+  function startDrag(cx,cy){
     const r=el.getBoundingClientRect(), c=document.getElementById('canvas').getBoundingClientRect();
-    ox=r.left-c.left; oy=r.top-c.top; e.preventDefault(); el.style.cursor='grabbing';
-  });
-  window.addEventListener('mousemove',e=>{ if(!dragging) return; el.style.left=Math.max(0,ox+(e.clientX-sx))+'px'; el.style.top=Math.max(0,oy+(e.clientY-sy))+'px'; });
-  window.addEventListener('mouseup',e=>{
+    ox=r.left-c.left; oy=r.top-c.top; sx=cx; sy=cy; dragging=true;
+    el.style.cursor='grabbing';
+  }
+  function moveDrag(cx,cy){
+    if(!dragging) return;
+    el.style.left=Math.max(0,ox+(cx-sx))+'px';
+    el.style.top=Math.max(0,oy+(cy-sy))+'px';
+  }
+  function endDrag(){
     if(!dragging) return; dragging=false; el.style.cursor='grab';
-    const items=state.memories[state.selectedDate]||[];
-    if(items[idx]){items[idx].x=parseInt(el.style.left);items[idx].y=parseInt(el.style.top);saveToStorage();}
+    const items=S.memories[S.selectedDate]||[];
+    if(items[idx]){items[idx].x=parseInt(el.style.left);items[idx].y=parseInt(el.style.top);saveStorage();}
+  }
+ 
+  // Mouse
+  el.addEventListener('mousedown',e=>{
+    if(e.target.closest('.item-ctrl-btn')||e.target.closest('.resize-handle')||e.target.closest('.note-resize-handle')||e.target.closest('[contenteditable]')||e.target.closest('.music-play')) return;
+    e.preventDefault(); startDrag(e.clientX,e.clientY);
   });
+  window.addEventListener('mousemove',e=>{ moveDrag(e.clientX,e.clientY); });
+  window.addEventListener('mouseup',endDrag);
+ 
+  // Touch
+  el.addEventListener('touchstart',e=>{
+    if(e.target.closest('.item-ctrl-btn')||e.target.closest('.resize-handle')||e.target.closest('.note-resize-handle')||e.target.closest('[contenteditable]')||e.target.closest('.music-play')) return;
+    const t=e.touches[0]; startDrag(t.clientX,t.clientY);
+  },{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(!dragging) return; e.preventDefault();
+    const t=e.touches[0]; moveDrag(t.clientX,t.clientY);
+  },{passive:false});
+  el.addEventListener('touchend',endDrag);
 }
-
-function enableCanvasDrag() {
-  document.getElementById('canvas').addEventListener('click',e=>{
-    if(e.target===document.getElementById('canvas')||e.target.closest('.empty-hint'))
-      document.querySelectorAll('.mem-item').forEach(el=>el.classList.remove('selected'));
-  });
-}
-
-function makeResizable(wrap,handle,idx) {
+ 
+document.getElementById('canvas').addEventListener('click',e=>{
+  if(e.target===document.getElementById('canvas')||e.target.closest('.empty-hint'))
+    document.querySelectorAll('.mem-item').forEach(el=>el.classList.remove('selected'));
+});
+ 
+/* ─── RESIZE ────────────────────────────────────────────────────────── */
+function makePhotoResizable(wrap,handle,idx){
   handle.addEventListener('mousedown',e=>{
     e.stopPropagation(); e.preventDefault();
-    const startX=e.clientX, img=wrap.querySelector('img'), startW=img?img.offsetWidth:180;
-    const onMove=ev=>{ const nw=Math.max(100,startW+(ev.clientX-startX)); if(img){img.style.width=nw+'px';img.style.height=(nw*150/180)+'px';} const items=state.memories[state.selectedDate]||[]; if(items[idx]) items[idx].width=nw; };
-    const onUp=()=>{ saveToStorage(); window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
-    window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+    const sx=e.clientX, img=wrap.querySelector('img'), sw=img.offsetWidth;
+    const mv=ev=>{ const nw=Math.max(100,sw+(ev.clientX-sx)); img.style.width=nw+'px'; img.style.height=(nw*150/180)+'px'; const items=S.memories[S.selectedDate]||[]; if(items[idx]) items[idx].width=nw; };
+    const up=()=>{ saveStorage(); window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); };
+    window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
   });
 }
-
-function makeStickerResizable(wrap,handle,idx) {
+function makeNoteResizable(wrap,handle,idx){
   handle.addEventListener('mousedown',e=>{
     e.stopPropagation(); e.preventDefault();
-    const startX=e.clientX, s=wrap.querySelector('.sticker-item'), startSize=parseInt(s.style.fontSize)||48;
-    const onMove=ev=>{ const ns=Math.max(20,Math.min(120,startSize+(ev.clientX-startX))); s.style.fontSize=ns+'px'; const items=state.memories[state.selectedDate]||[]; if(items[idx]) items[idx].size=ns; };
-    const onUp=()=>{ saveToStorage(); window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
-    window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+    const sx=e.clientX, sy=e.clientY, note=wrap.querySelector('.sticky-note'), sw=note.offsetWidth, sh=note.offsetHeight;
+    const mv=ev=>{
+      const nw=Math.max(120,sw+(ev.clientX-sx)), nh=Math.max(80,sh+(ev.clientY-sy));
+      note.style.width=nw+'px'; note.style.height=nh+'px'; note.style.minHeight=nh+'px';
+      const items=S.memories[S.selectedDate]||[]; if(items[idx]){items[idx].noteW=nw;items[idx].noteH=nh;}
+    };
+    const up=()=>{ saveStorage(); window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); };
+    window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
   });
 }
-
-function undoLast() {
-  if(!state.history.length){ showToast('Nothing to undo'); return; }
-  const {date,index}=state.history.pop();
-  if(state.memories[date]){ state.memories[date].splice(index,1); if(!state.memories[date].length) delete state.memories[date]; }
-  saveToStorage(); renderCanvas(); renderCalendar(); showToast('Undone ↩');
+function makeStickerResizable(wrap,handle,idx){
+  handle.addEventListener('mousedown',e=>{
+    e.stopPropagation(); e.preventDefault();
+    const sx=e.clientX, s=wrap.querySelector('.sticker-item'), ss=parseInt(s.style.fontSize)||48;
+    const mv=ev=>{ const ns=Math.max(20,Math.min(120,ss+(ev.clientX-sx))); s.style.fontSize=ns+'px'; const items=S.memories[S.selectedDate]||[]; if(items[idx]) items[idx].size=ns; };
+    const up=()=>{ saveStorage(); window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); };
+    window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+  });
 }
-
-function clearCanvas() {
-  if(!confirm('Clear all memories for this day?')) return;
-  delete state.memories[state.selectedDate];
-  state.history=state.history.filter(h=>h.date!==state.selectedDate);
-  saveToStorage(); renderCanvas(); renderCalendar(); showToast('Canvas cleared ✕');
+ 
+/* ─── UNDO / CLEAR ──────────────────────────────────────────────────── */
+function undoLast(){
+  if(!S.history.length){showToast('Geri alınacak bir şey yok');return;}
+  const {date,index}=S.history.pop();
+  if(S.memories[date]){S.memories[date].splice(index,1);if(!S.memories[date].length)delete S.memories[date];}
+  saveStorage(); renderCanvas(); renderCalendar(); showToast('Geri alındı ↩');
 }
-
-function randX() { return Math.floor(Math.random()*(document.getElementById('canvas').offsetWidth-250))+80; }
-function randY() { return Math.floor(Math.random()*(document.getElementById('canvas').offsetHeight-220))+60; }
-function randRot() { return (Math.random()-0.5)*8; }
-
-function showToast(msg) {
+function clearCanvas(){
+  if(!confirm('Bu günün tüm anıları silinsin mi?')) return;
+  delete S.memories[S.selectedDate];
+  S.history=S.history.filter(h=>h.date!==S.selectedDate);
+  saveStorage(); renderCanvas(); renderCalendar(); showToast('Temizlendi ✕');
+}
+ 
+/* ─── TOAST ─────────────────────────────────────────────────────────── */
+function showToast(msg){
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2200);
 }
